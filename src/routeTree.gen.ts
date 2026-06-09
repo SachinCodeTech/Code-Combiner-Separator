@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as InfoRouteImport } from './routes/info'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/info': typeof InfoRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/info': typeof InfoRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,21 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/info': typeof InfoRoute
   '/privacy': typeof PrivacyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/app' | '/info' | '/privacy'
+  fullPaths: '/' | '/about' | '/app' | '/info' | '/privacy' | '/sitemap.xml'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/app' | '/info' | '/privacy'
-  id: '__root__' | '/' | '/about' | '/app' | '/info' | '/privacy'
+  to: '/' | '/about' | '/app' | '/info' | '/privacy' | '/sitemap.xml'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/app'
+    | '/info'
+    | '/privacy'
+    | '/sitemap.xml'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,10 +93,18 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   InfoRoute: typeof InfoRoute
   PrivacyRoute: typeof PrivacyRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -125,6 +149,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   InfoRoute: InfoRoute,
   PrivacyRoute: PrivacyRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
