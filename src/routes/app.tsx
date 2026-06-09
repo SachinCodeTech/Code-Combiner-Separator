@@ -81,73 +81,104 @@ function AppPage() {
       .catch((err) => alert("Clipboard error: " + err));
   }
 
-  useEffect(() => {
-    // no-op: ensures refs mount client-side
-  }, []);
+  useEffect(() => {}, []);
 
   const ta: React.CSSProperties = {
     width: "100%",
-    height: 120,
-    background: "#fff",
-    color: "#111",
-    border: "1px solid #ccc",
-    padding: 10,
+    height: 130,
+    background: "#ffffff",
+    color: "#0f172a",
+    border: "1px solid #d8dee9",
+    borderRadius: 8,
+    padding: 12,
     resize: "vertical",
-    fontFamily: "monospace",
-    marginBottom: 10,
-    boxShadow: "1px 1px 4px rgba(0,0,0,0.05)",
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+    fontSize: 13,
+    marginBottom: 12,
+    boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
     boxSizing: "border-box",
+    outline: "none",
   };
   const btn: React.CSSProperties = {
-    margin: "5px 5px 5px 0",
-    padding: "10px 16px",
+    margin: "4px 6px 4px 0",
+    padding: "10px 18px",
     border: "none",
-    borderRadius: 4,
-    fontWeight: "bold",
+    borderRadius: 8,
+    fontWeight: 600,
+    fontSize: 14,
     cursor: "pointer",
     color: "white",
+    boxShadow: "0 1px 2px rgba(15,23,42,0.12)",
+    transition: "transform .05s ease",
+  };
+  const label: React.CSSProperties = {
+    display: "block",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#334155",
+    margin: "6px 2px 6px",
+    letterSpacing: 0.2,
   };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", background: "#fdfdfd", color: "#111", margin: 0, padding: 10, minHeight: "100vh" }}>
-      <h2 style={{ margin: 0, padding: 10, background: "#e0e0e0", color: "#222" }}>
-        CCnCS — Code Separator and Combiner
-      </h2>
+    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", background: "#f5f7fb", color: "#0f172a", margin: 0, minHeight: "100vh" }}>
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          padding: "14px 16px",
+          background: "linear-gradient(135deg, #0ea5e9, #6366f1)",
+          color: "white",
+          boxShadow: "0 2px 10px rgba(15,23,42,0.12)",
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 0.3 }}>
+          CCnCS — Code Separator & Combiner
+        </h2>
+        <nav style={{ marginTop: 8, fontSize: 13, display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <Link to="/" style={{ color: "rgba(255,255,255,0.95)" }}>Home</Link>
+          <Link to="/about" style={{ color: "rgba(255,255,255,0.95)" }}>About</Link>
+          <Link to="/privacy" style={{ color: "rgba(255,255,255,0.95)" }}>Privacy</Link>
+          <Link to="/info" style={{ color: "rgba(255,255,255,0.95)" }}>App Info</Link>
+        </nav>
+      </header>
 
-      <div style={{ padding: "8px 4px", fontSize: 14 }}>
-        <Link to="/" style={{ marginRight: 12 }}>Home</Link>
-        <Link to="/about" style={{ marginRight: 12 }}>About</Link>
-        <Link to="/privacy" style={{ marginRight: 12 }}>Privacy</Link>
-        <Link to="/info">App Info</Link>
+      <div style={{ padding: 14, maxWidth: 960, margin: "0 auto" }}>
+        <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
+          <label style={label}>Full Combined HTML Code</label>
+          <textarea ref={combinedRef} style={ta} placeholder="Paste full HTML code here..." />
+          <button style={{ ...btn, backgroundColor: "#0ea5e9" }} onClick={separateCode}>Separate Code</button>
+        </section>
+
+        <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
+          <label style={label}>HTML</label>
+          <textarea ref={htmlRef} style={ta} />
+
+          <label style={label}>CSS</label>
+          <textarea ref={cssRef} style={ta} />
+
+          <label style={label}>JavaScript</label>
+          <textarea ref={jsRef} style={ta} />
+
+          <div style={{ display: "flex", flexWrap: "wrap", marginTop: 4 }}>
+            <button style={{ ...btn, backgroundColor: "#2563eb" }} onClick={combineAndRun}>Combine & Run</button>
+            <button style={{ ...btn, backgroundColor: "#64748b" }} onClick={clearAll}>Clear All</button>
+            <button style={{ ...btn, backgroundColor: "#16a34a" }} onClick={downloadCombined}>Download</button>
+            <button style={{ ...btn, backgroundColor: "#f59e0b", color: "#1f2937" }} onClick={shareCombined}>Share</button>
+          </div>
+        </section>
+
+        <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}>
+          <h3 style={{ margin: "0 0 10px", fontSize: 15, color: "#334155" }}>Live Preview</h3>
+          <iframe
+            ref={previewRef}
+            title="Live Preview"
+            sandbox="allow-scripts"
+            style={{ width: "100%", height: 320, border: "1px solid #e2e8f0", borderRadius: 8, background: "white" }}
+          />
+        </section>
       </div>
-
-      <label>Full Combined HTML Code</label>
-      <textarea ref={combinedRef} style={ta} placeholder="Paste full HTML code here..." />
-      <button style={{ ...btn, backgroundColor: "#17a2b8" }} onClick={separateCode}>Separate Code</button>
-
-      <hr />
-
-      <label>HTML</label>
-      <textarea ref={htmlRef} style={ta} />
-
-      <label>CSS</label>
-      <textarea ref={cssRef} style={ta} />
-
-      <label>JavaScript</label>
-      <textarea ref={jsRef} style={ta} />
-
-      <button style={{ ...btn, backgroundColor: "#007bff" }} onClick={combineAndRun}>Combine & Run</button>
-      <button style={{ ...btn, backgroundColor: "#6c757d" }} onClick={clearAll}>Clear All</button>
-      <button style={{ ...btn, backgroundColor: "#28a745" }} onClick={downloadCombined}>Download</button>
-      <button style={{ ...btn, backgroundColor: "#ffc107", color: "#333" }} onClick={shareCombined}>Share</button>
-
-      <h3>Live Preview</h3>
-      <iframe
-        ref={previewRef}
-        title="Live Preview"
-        sandbox="allow-scripts"
-        style={{ width: "100%", height: 300, border: "1px solid #ccc", background: "white" }}
-      />
     </div>
   );
 }
