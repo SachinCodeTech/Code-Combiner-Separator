@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AppHeader } from "@/components/AppHeader";
+import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -12,10 +14,8 @@ export const Route = createFileRoute("/privacy")({
 
 function Privacy() {
   return (
-    <div style={{ minHeight: "100vh", background: "#f5f7fb", color: "#0f172a", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif" }}>
-      <header style={{ position: "sticky", top: 0, zIndex: 10, padding: "14px 16px", background: "linear-gradient(135deg, #0ea5e9, #6366f1)", color: "white", boxShadow: "0 2px 10px rgba(15,23,42,0.12)" }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 0.3 }}>Privacy Policy</h2>
-      </header>
+    <div style={{ minHeight: "100vh", background: "#f5f7fb", color: "#0f172a", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", paddingBottom: 60 }}>
+      <AppHeader />
       <div style={{ maxWidth: 760, margin: "0 auto", padding: 20, lineHeight: 1.7 }}>
         <p><em>Last updated: June 9, 2026</em></p>
 
@@ -65,6 +65,7 @@ function Privacy() {
           <Link to="/">← Back home</Link>
         </p>
       </div>
+      <BottomNav />
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AppHeader } from "@/components/AppHeader";
+import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,20 +23,8 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div style={{ minHeight: "100vh", background: "#f5f7fb", color: "#0f172a", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif" }}>
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          padding: "14px 16px",
-          background: "linear-gradient(135deg, #0ea5e9, #6366f1)",
-          color: "white",
-          boxShadow: "0 2px 10px rgba(15,23,42,0.12)",
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 0.3 }}>CCnCS</h2>
-      </header>
+    <div style={{ minHeight: "100vh", background: "#f5f7fb", color: "#0f172a", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", paddingBottom: 60 }}>
+      <AppHeader />
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 18px", textAlign: "center" }}>
         <div style={{
@@ -94,14 +84,9 @@ function Landing() {
             <li>Share code to your clipboard</li>
           </ul>
         </div>
-
-        <nav style={{ marginTop: 28, fontSize: 14, display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap" }}>
-          <Link to="/app">App</Link>
-          <Link to="/about">About</Link>
-          <Link to="/privacy">Privacy</Link>
-          <Link to="/info">App Info</Link>
-        </nav>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
