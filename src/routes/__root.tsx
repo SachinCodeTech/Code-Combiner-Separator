@@ -76,21 +76,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#007bff" },
+      { title: "CCnCS — Code Combiner & Separator" },
+      {
+        name: "description",
+        content:
+          "CCnCS is a lightweight web tool by CodeTech to separate, combine, preview, download and share HTML, CSS and JavaScript code.",
+      },
+      { name: "author", content: "CodeTech" },
+      { property: "og:title", content: "CCnCS — Code Combiner & Separator" },
+      {
+        property: "og:description",
+        content:
+          "Separate, combine, preview and share HTML, CSS and JavaScript code. By CodeTech.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", href: "/favicon.ico" },
     ],
   }),
   shellComponent: RootShell,
@@ -118,7 +125,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
   );
