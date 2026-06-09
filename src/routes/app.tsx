@@ -1,5 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
+import { AppHeader } from "@/components/AppHeader";
+import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/app")({
   head: () => ({
@@ -121,28 +123,8 @@ function AppPage() {
   };
 
   return (
-    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", background: "#f5f7fb", color: "#0f172a", margin: 0, minHeight: "100vh" }}>
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          padding: "14px 16px",
-          background: "linear-gradient(135deg, #0ea5e9, #6366f1)",
-          color: "white",
-          boxShadow: "0 2px 10px rgba(15,23,42,0.12)",
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 0.3 }}>
-          CCnCS — Code Separator & Combiner
-        </h2>
-        <nav style={{ marginTop: 8, fontSize: 13, display: "flex", gap: 14, flexWrap: "wrap" }}>
-          <Link to="/" style={{ color: "rgba(255,255,255,0.95)" }}>Home</Link>
-          <Link to="/about" style={{ color: "rgba(255,255,255,0.95)" }}>About</Link>
-          <Link to="/privacy" style={{ color: "rgba(255,255,255,0.95)" }}>Privacy</Link>
-          <Link to="/info" style={{ color: "rgba(255,255,255,0.95)" }}>App Info</Link>
-        </nav>
-      </header>
+    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", background: "#f5f7fb", color: "#0f172a", margin: 0, minHeight: "100vh", paddingBottom: 60 }}>
+      <AppHeader />
 
       <div style={{ padding: 14, maxWidth: 960, margin: "0 auto" }}>
         <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
@@ -179,6 +161,8 @@ function AppPage() {
           />
         </section>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
