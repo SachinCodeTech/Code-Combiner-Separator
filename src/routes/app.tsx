@@ -102,16 +102,21 @@ function AppPage() {
     outline: "none",
   };
   const btn: React.CSSProperties = {
-    margin: "4px 6px 4px 0",
-    padding: "10px 18px",
+    flex: "1 1 0",
+    minWidth: 0,
+    margin: 0,
+    padding: "8px 4px",
     border: "none",
-    borderRadius: 8,
+    borderRadius: 6,
     fontWeight: 600,
-    fontSize: 14,
+    fontSize: 12,
     cursor: "pointer",
     color: "white",
     boxShadow: "0 1px 2px rgba(15,23,42,0.12)",
     transition: "transform .05s ease",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   };
   const label: React.CSSProperties = {
     display: "block",
