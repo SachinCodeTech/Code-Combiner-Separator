@@ -147,13 +147,6 @@ function AppPage() {
 
           <label style={label}>JavaScript</label>
           <textarea ref={jsRef} style={ta} />
-
-          <div style={{ display: "flex", flexWrap: "wrap", marginTop: 4 }}>
-            <button style={{ ...btn, backgroundColor: "#2563eb" }} onClick={combineAndRun}>Combine & Run</button>
-            <button style={{ ...btn, backgroundColor: "#64748b" }} onClick={clearAll}>Clear All</button>
-            <button style={{ ...btn, backgroundColor: "#16a34a" }} onClick={downloadCombined}>Download</button>
-            <button style={{ ...btn, backgroundColor: "#f59e0b", color: "#1f2937" }} onClick={shareCombined}>Share</button>
-          </div>
         </section>
 
         <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}>
