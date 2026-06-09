@@ -102,16 +102,21 @@ function AppPage() {
     outline: "none",
   };
   const btn: React.CSSProperties = {
-    margin: "4px 6px 4px 0",
-    padding: "10px 18px",
+    flex: "1 1 0",
+    minWidth: 0,
+    margin: 0,
+    padding: "8px 4px",
     border: "none",
-    borderRadius: 8,
+    borderRadius: 6,
     fontWeight: 600,
-    fontSize: 14,
+    fontSize: 12,
     cursor: "pointer",
     color: "white",
     boxShadow: "0 1px 2px rgba(15,23,42,0.12)",
     transition: "transform .05s ease",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   };
   const label: React.CSSProperties = {
     display: "block",
@@ -126,7 +131,7 @@ function AppPage() {
     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", background: "#f5f7fb", color: "#0f172a", margin: 0, minHeight: "100vh", paddingBottom: 60 }}>
       <AppHeader />
 
-      <div style={{ padding: 14, maxWidth: 960, margin: "0 auto" }}>
+      <div style={{ padding: 14, paddingBottom: 114, maxWidth: 960, margin: "0 auto" }}>
         <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
           <label style={label}>Full Combined HTML Code</label>
           <textarea ref={combinedRef} style={ta} placeholder="Paste full HTML code here..." />
@@ -142,16 +147,9 @@ function AppPage() {
 
           <label style={label}>JavaScript</label>
           <textarea ref={jsRef} style={ta} />
-
-          <div style={{ display: "flex", flexWrap: "wrap", marginTop: 4 }}>
-            <button style={{ ...btn, backgroundColor: "#2563eb" }} onClick={combineAndRun}>Combine & Run</button>
-            <button style={{ ...btn, backgroundColor: "#64748b" }} onClick={clearAll}>Clear All</button>
-            <button style={{ ...btn, backgroundColor: "#16a34a" }} onClick={downloadCombined}>Download</button>
-            <button style={{ ...btn, backgroundColor: "#f59e0b", color: "#1f2937" }} onClick={shareCombined}>Share</button>
-          </div>
         </section>
 
-        <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
           <h3 style={{ margin: "0 0 10px", fontSize: 15, color: "#334155" }}>Live Preview</h3>
           <iframe
             ref={previewRef}
@@ -160,6 +158,28 @@ function AppPage() {
             style={{ width: "100%", height: 320, border: "1px solid #e2e8f0", borderRadius: 8, background: "white" }}
           />
         </section>
+      </div>
+
+      <div
+        style={{
+          position: "fixed",
+          bottom: 52,
+          left: 0,
+          right: 0,
+          zIndex: 20,
+          display: "flex",
+          gap: 6,
+          alignItems: "center",
+          padding: "8px 10px",
+          background: "#ffffff",
+          borderTop: "1px solid #e2e8f0",
+          boxShadow: "0 -2px 8px rgba(15,23,42,0.06)",
+        }}
+      >
+        <button style={{ ...btn, backgroundColor: "#2563eb" }} onClick={combineAndRun}>Combine & Run</button>
+        <button style={{ ...btn, backgroundColor: "#16a34a" }} onClick={downloadCombined}>Download</button>
+        <button style={{ ...btn, backgroundColor: "#f59e0b", color: "#1f2937" }} onClick={shareCombined}>Share</button>
+        <button style={{ ...btn, backgroundColor: "#64748b" }} onClick={clearAll}>Clear All</button>
       </div>
 
       <BottomNav />
