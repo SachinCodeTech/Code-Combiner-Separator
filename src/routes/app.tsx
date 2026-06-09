@@ -131,7 +131,7 @@ function AppPage() {
     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", background: "#f5f7fb", color: "#0f172a", margin: 0, minHeight: "100vh", paddingBottom: 60 }}>
       <AppHeader />
 
-      <div style={{ padding: 14, maxWidth: 960, margin: "0 auto" }}>
+      <div style={{ padding: 14, paddingBottom: 114, maxWidth: 960, margin: "0 auto" }}>
         <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
           <label style={label}>Full Combined HTML Code</label>
           <textarea ref={combinedRef} style={ta} placeholder="Paste full HTML code here..." />
