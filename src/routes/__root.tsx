@@ -8,9 +8,12 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { initTheme } from "../lib/theme";
+import { registerPWA } from "../lib/pwa-register";
 
 function NotFoundComponent() {
   return (
@@ -77,19 +80,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#007bff" },
+      { name: "theme-color", content: "#6366f1" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "CCnCS" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { title: "CCnCS — Code Combiner & Separator" },
       {
         name: "description",
         content:
-          "CCnCS is a lightweight web tool by CodeTech to separate, combine, preview, download and share HTML, CSS and JavaScript code.",
+          "CCnCS by CodeTech — split, combine, beautify, preview, download and share HTML, CSS and JavaScript. Works offline.",
       },
       { name: "author", content: "CodeTech" },
       { property: "og:title", content: "CCnCS — Code Combiner & Separator" },
       {
         property: "og:description",
         content:
-          "Separate, combine, preview and share HTML, CSS and JavaScript code. By CodeTech.",
+          "Split. Combine. Preview. Free developer utility by CodeTech. Installable, works offline.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -97,7 +104,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "icon", href: "/favicon.ico" },
+      { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
     ],
   }),
   shellComponent: RootShell,
@@ -123,9 +131,17 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    initTheme();
+    registerPWA();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <main>
+        <Outlet />
+      </main>
+      <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
   );
 }
