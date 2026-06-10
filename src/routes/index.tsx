@@ -72,9 +72,8 @@ function Landing() {
           >
             <Rocket size={16} /> Launch App
           </Link>
-          <Link
-            to="/app"
-            search={{ sample: 1 } as never}
+          <a
+            href="/app?sample=1"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               padding: "12px 18px",
@@ -85,7 +84,7 @@ function Landing() {
             }}
           >
             <Sparkles size={16} /> Try Example
-          </Link>
+          </a>
           <Link
             to="/about"
             style={{
