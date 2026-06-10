@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { ThemeToggle } from "./ThemeToggle";
+import { OfflineBadge } from "./OfflineBadge";
 
 export function AppHeader({ showNav = false }: { showNav?: boolean }) {
   return (
@@ -8,20 +10,20 @@ export function AppHeader({ showNav = false }: { showNav?: boolean }) {
         top: 0,
         zIndex: 10,
         padding: "10px 14px",
-        background: "linear-gradient(135deg, #0ea5e9, #6366f1)",
+        background: "var(--header-grad)",
         color: "white",
-        boxShadow: "0 2px 10px rgba(15,23,42,0.12)",
+        boxShadow: "0 2px 10px rgba(15,23,42,0.18)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <img
-          src="/logo.png"
+          src="/icon-192.png"
           alt="CCnCS Logo"
           width={36}
           height={36}
           style={{ borderRadius: 8, flexShrink: 0 }}
         />
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: 0.3, lineHeight: 1.2 }}>
             CCnCS
           </div>
@@ -33,10 +35,17 @@ export function AppHeader({ showNav = false }: { showNav?: boolean }) {
               color: "rgba(255,255,255,0.85)",
               lineHeight: 1.2,
               marginTop: 1,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
-            Code Combiner &amp; Separator
+            Split. Combine. Preview.
           </div>
+        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+          <OfflineBadge />
+          <ThemeToggle />
         </div>
       </div>
       {showNav && (

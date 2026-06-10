@@ -1,13 +1,16 @@
 {
   "name": "CCnCS — Code Combiner & Separator",
   "short_name": "CCnCS",
-  "description": "Separate, combine, preview, download and share HTML, CSS and JavaScript code. By CodeTech.",
+  "description": "Separate, combine, beautify, preview, download and share HTML, CSS and JavaScript code. By CodeTech.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#fdfdfd",
-  "theme_color": "#007bff",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "categories": ["developer", "utilities", "productivity"],
   "icons": [
-    { "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

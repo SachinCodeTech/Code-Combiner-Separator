@@ -1,7 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
+import { toast } from "sonner";
+import JSZip from "jszip";
+import { html_beautify, css_beautify, js_beautify } from "js-beautify";
+import {
+  Play, Download, Share2, Trash2, Copy, Sparkles, Wand2,
+  FileArchive, FileDown, Scissors,
+} from "lucide-react";
+
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
+import { CodeEditor } from "@/components/CodeEditor";
+import {
+  SAMPLE_HTML, detectParts, countLines, byteSize, formatSize,
+  type DetectResult,
+} from "@/lib/sample";
 
 export const Route = createFileRoute("/app")({
   head: () => ({
@@ -9,7 +22,8 @@ export const Route = createFileRoute("/app")({
       { title: "CCnCS App — Code Separator and Combiner" },
       {
         name: "description",
-        content: "Separate combined HTML into HTML, CSS and JS; combine, preview, download and share.",
+        content:
+          "Separate combined HTML into HTML, CSS and JS; beautify, combine, preview, copy, download, share, and export as ZIP.",
       },
     ],
   }),
@@ -17,172 +31,441 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppPage() {
-  const combinedRef = useRef<HTMLTextAreaElement>(null);
-  const htmlRef = useRef<HTMLTextAreaElement>(null);
-  const cssRef = useRef<HTMLTextAreaElement>(null);
-  const jsRef = useRef<HTMLTextAreaElement>(null);
+  const [combined, setCombined] = useState("");
+  const [htmlCode, setHtmlCode] = useState("");
+  const [cssCode, setCssCode] = useState("");
+  const [jsCode, setJsCode] = useState("");
+  const [detected, setDetected] = useState<DetectResult>({ html: false, css: false, js: false });
+  const [dragOver, setDragOver] = useState(false);
   const previewRef = useRef<HTMLIFrameElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  function separateCode() {
-    const input = combinedRef.current!.value;
-    const htmlMatch = input.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    const cssMatch = input.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-    const jsMatch = input.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
-    htmlRef.current!.value = htmlMatch ? htmlMatch[1].trim() : "";
-    cssRef.current!.value = cssMatch ? cssMatch[1].trim() : "";
-    jsRef.current!.value = jsMatch ? jsMatch[1].trim() : "";
+  // Load sample if ?sample=1
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("sample") === "1") {
+        setCombined(SAMPLE_HTML);
+        doSeparate(SAMPLE_HTML);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-detect whenever combined changes
+  useEffect(() => {
+    setDetected(detectParts(combined));
+  }, [combined]);
+
+  function doSeparate(input: string) {
+    const src = input ?? combined;
+    if (!src.trim()) {
+      toast.error("Nothing to separate — paste some HTML first.");
+      return;
+    }
+    const htmlMatch = src.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    const cssMatch = src.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    const jsMatch = src.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+    setHtmlCode((htmlMatch ? htmlMatch[1] : src).trim());
+    setCssCode(cssMatch ? cssMatch[1].trim() : "");
+    setJsCode(jsMatch ? jsMatch[1].trim() : "");
+    toast.success("Code separated");
   }
 
   function buildHTML() {
-    const html = htmlRef.current!.value;
-    const css = cssRef.current!.value;
-    const js = jsRef.current!.value;
-    return `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <style>${css}</style>
-          </head>
-          <body>
-            ${html}
-            <script>${js}<\/script>
-          </body>
-        </html>`;
+    return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>${cssCode}</style>
+  </head>
+  <body>
+    ${htmlCode}
+    <script>${jsCode}<\/script>
+  </body>
+</html>`;
   }
 
   function combineAndRun() {
-    previewRef.current!.srcdoc = buildHTML();
+    if (previewRef.current) previewRef.current.srcdoc = buildHTML();
+    toast.success("Preview updated");
   }
 
   function clearAll() {
-    combinedRef.current!.value = "";
-    htmlRef.current!.value = "";
-    cssRef.current!.value = "";
-    jsRef.current!.value = "";
-    previewRef.current!.srcdoc = "";
+    setCombined("");
+    setHtmlCode("");
+    setCssCode("");
+    setJsCode("");
+    if (previewRef.current) previewRef.current.srcdoc = "";
+    toast("Cleared");
   }
 
   function downloadCombined() {
-    const blob = new Blob([buildHTML()], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "combined_code.html";
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(buildHTML(), "combined_code.html", "text/html");
+    toast.success("Downloaded combined_code.html");
   }
 
-  function shareCombined() {
-    const html = htmlRef.current!.value;
-    const css = cssRef.current!.value;
-    const js = jsRef.current!.value;
-    const shareText = `HTML:\n${html}\n\nCSS:\n${css}\n\nJS:\n${js}`;
-    navigator.clipboard
-      .writeText(shareText)
-      .then(() => alert("Code copied to clipboard!"))
-      .catch((err) => alert("Clipboard error: " + err));
+  async function shareCombined() {
+    const text = `HTML:\n${htmlCode}\n\nCSS:\n${cssCode}\n\nJS:\n${jsCode}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "CCnCS code", text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success("Code copied to clipboard");
+    } catch (err) {
+      toast.error("Share failed: " + (err as Error).message);
+    }
   }
 
-  useEffect(() => {}, []);
+  async function copyText(label: string, text: string) {
+    if (!text) {
+      toast.error(`${label} is empty`);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Clipboard not available");
+    }
+  }
 
-  const ta: React.CSSProperties = {
-    width: "100%",
-    height: 130,
-    background: "#ffffff",
-    color: "#0f172a",
-    border: "1px solid #d8dee9",
-    borderRadius: 8,
-    padding: 12,
-    resize: "vertical",
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-    fontSize: 13,
-    marginBottom: 12,
-    boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
-    boxSizing: "border-box",
-    outline: "none",
-  };
-  const btn: React.CSSProperties = {
-    flex: "1 1 0",
-    minWidth: 0,
-    margin: 0,
-    padding: "8px 4px",
-    border: "none",
-    borderRadius: 6,
-    fontWeight: 600,
-    fontSize: 12,
-    cursor: "pointer",
-    color: "white",
-    boxShadow: "0 1px 2px rgba(15,23,42,0.12)",
-    transition: "transform .05s ease",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  };
-  const label: React.CSSProperties = {
-    display: "block",
-    fontSize: 13,
-    fontWeight: 600,
-    color: "#334155",
-    margin: "6px 2px 6px",
-    letterSpacing: 0.2,
-  };
+  function loadSample() {
+    setCombined(SAMPLE_HTML);
+    doSeparate(SAMPLE_HTML);
+  }
+
+  function beautifyAll() {
+    try {
+      if (htmlCode) setHtmlCode(html_beautify(htmlCode, { indent_size: 2, wrap_line_length: 100 }));
+      if (cssCode) setCssCode(css_beautify(cssCode, { indent_size: 2 }));
+      if (jsCode) setJsCode(js_beautify(jsCode, { indent_size: 2 }));
+      if (combined) setCombined(html_beautify(combined, { indent_size: 2, wrap_line_length: 100 }));
+      toast.success("Code beautified");
+    } catch (err) {
+      toast.error("Beautify failed: " + (err as Error).message);
+    }
+  }
+
+  async function downloadZip() {
+    try {
+      const zip = new JSZip();
+      zip.file("index.html", htmlWrapper(htmlCode));
+      if (cssCode) zip.file("style.css", cssCode);
+      if (jsCode) zip.file("script.js", jsCode);
+      zip.file("README.md", `# CCnCS Export\nGenerated by CCnCS (by CodeTech).\n`);
+      const blob = await zip.generateAsync({ type: "blob" });
+      triggerBlob(blob, "ccncs-export.zip");
+      toast.success("ZIP downloaded");
+    } catch (err) {
+      toast.error("ZIP failed: " + (err as Error).message);
+    }
+  }
+
+  function downloadPart(name: string, content: string, mime: string) {
+    if (!content) {
+      toast.error(`${name} is empty`);
+      return;
+    }
+    triggerDownload(content, name, mime);
+    toast.success(`Downloaded ${name}`);
+  }
+
+  // Drag & drop import
+  function onDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    readFile(file);
+  }
+  function readFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      setCombined(text);
+      doSeparate(text);
+    };
+    reader.onerror = () => toast.error("Could not read file");
+    reader.readAsText(file);
+  }
+
+  const totalSize = byteSize(htmlCode) + byteSize(cssCode) + byteSize(jsCode);
 
   return (
-    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", background: "#f5f7fb", color: "#0f172a", margin: 0, minHeight: "100vh", paddingBottom: 60 }}>
+    <div
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={onDrop}
+      style={{
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
+        background: "var(--bg)", color: "var(--text)",
+        margin: 0, minHeight: "100vh", paddingBottom: 70,
+      }}
+    >
       <AppHeader />
 
-      <div style={{ padding: 14, paddingBottom: 114, maxWidth: 960, margin: "0 auto" }}>
-        <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
-          <label style={label}>Full Combined HTML Code</label>
-          <textarea ref={combinedRef} style={ta} placeholder="Paste full HTML code here..." />
-          <button style={{ ...btn, backgroundColor: "#0ea5e9" }} onClick={separateCode}>Separate Code</button>
-        </section>
+      {dragOver && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          background: "rgba(99,102,241,0.15)",
+          border: "3px dashed var(--accent)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontWeight: 700, color: "var(--accent)", pointerEvents: "none",
+        }}>
+          Drop .html file to load
+        </div>
+      )}
 
-        <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
-          <label style={label}>HTML</label>
-          <textarea ref={htmlRef} style={ta} />
+      <div style={{ padding: 12, paddingBottom: 130, maxWidth: 960, margin: "0 auto" }}>
+        {/* Toolbar */}
+        <div style={{
+          display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12,
+        }}>
+          <ToolbarButton onClick={loadSample} icon={<Sparkles size={14} />} label="Sample" />
+          <ToolbarButton onClick={beautifyAll} icon={<Wand2 size={14} />} label="Beautify" />
+          <ToolbarButton onClick={() => fileRef.current?.click()} icon={<FileDown size={14} />} label="Import" />
+          <ToolbarButton onClick={downloadZip} icon={<FileArchive size={14} />} label="Export ZIP" />
+          <input
+            ref={fileRef} type="file" accept=".html,.htm,text/html"
+            style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); e.target.value = ""; }}
+          />
+        </div>
 
-          <label style={label}>CSS</label>
-          <textarea ref={cssRef} style={ta} />
+        {/* Combined input */}
+        <Section title="Full Combined HTML">
+          <CodeEditor
+            value={combined}
+            onChange={setCombined}
+            language="html"
+            height={160}
+            placeholder="Paste full HTML code here, or drag & drop a .html file..."
+          />
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
+            <button
+              onClick={() => doSeparate(combined)}
+              style={primaryBtn}
+              aria-label="Separate code"
+            >
+              <Scissors size={14} /> Separate
+            </button>
+            <DetectChips d={detected} />
+            <span style={statText}>
+              {countLines(combined)} lines · {formatSize(byteSize(combined))}
+            </span>
+          </div>
+        </Section>
 
-          <label style={label}>JavaScript</label>
-          <textarea ref={jsRef} style={ta} />
-        </section>
+        {/* HTML */}
+        <Section
+          title="HTML"
+          actions={
+            <>
+              <IconAction onClick={() => copyText("HTML", htmlCode)} icon={<Copy size={13} />} label="Copy" />
+              <IconAction onClick={() => downloadPart("index.html", htmlWrapper(htmlCode), "text/html")} icon={<Download size={13} />} label="Save" />
+            </>
+          }
+          stats={`${countLines(htmlCode)} lines · ${formatSize(byteSize(htmlCode))}`}
+        >
+          <CodeEditor value={htmlCode} onChange={setHtmlCode} language="html" height={150} />
+        </Section>
 
-        <section style={{ background: "white", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14 }}>
-          <h3 style={{ margin: "0 0 10px", fontSize: 15, color: "#334155" }}>Live Preview</h3>
+        {/* CSS */}
+        <Section
+          title="CSS"
+          actions={
+            <>
+              <IconAction onClick={() => copyText("CSS", cssCode)} icon={<Copy size={13} />} label="Copy" />
+              <IconAction onClick={() => downloadPart("style.css", cssCode, "text/css")} icon={<Download size={13} />} label="Save" />
+            </>
+          }
+          stats={`${countLines(cssCode)} lines · ${formatSize(byteSize(cssCode))}`}
+        >
+          <CodeEditor value={cssCode} onChange={setCssCode} language="css" height={140} />
+        </Section>
+
+        {/* JS */}
+        <Section
+          title="JavaScript"
+          actions={
+            <>
+              <IconAction onClick={() => copyText("JS", jsCode)} icon={<Copy size={13} />} label="Copy" />
+              <IconAction onClick={() => downloadPart("script.js", jsCode, "text/javascript")} icon={<Download size={13} />} label="Save" />
+            </>
+          }
+          stats={`${countLines(jsCode)} lines · ${formatSize(byteSize(jsCode))}`}
+        >
+          <CodeEditor value={jsCode} onChange={setJsCode} language="js" height={140} />
+        </Section>
+
+        {/* Preview */}
+        <Section title="Live Preview" stats={`Total ${formatSize(totalSize)}`}>
           <iframe
             ref={previewRef}
             title="Live Preview"
             sandbox="allow-scripts"
-            style={{ width: "100%", height: 320, border: "1px solid #e2e8f0", borderRadius: 8, background: "white" }}
+            style={{
+              width: "100%", height: 300, border: "1px solid var(--border)",
+              borderRadius: 8, background: "white",
+            }}
           />
-        </section>
+        </Section>
       </div>
 
+      {/* Fixed action bar */}
       <div
         style={{
           position: "fixed",
-          bottom: 52,
-          left: 0,
-          right: 0,
-          zIndex: 20,
-          display: "flex",
-          gap: 6,
-          alignItems: "center",
+          bottom: 56,
+          left: 0, right: 0, zIndex: 19,
+          display: "flex", gap: 6, alignItems: "center",
           padding: "8px 10px",
-          background: "#ffffff",
-          borderTop: "1px solid #e2e8f0",
-          boxShadow: "0 -2px 8px rgba(15,23,42,0.06)",
+          background: "var(--surface)",
+          borderTop: "1px solid var(--border)",
+          boxShadow: "0 -2px 8px rgba(15,23,42,0.08)",
         }}
       >
-        <button style={{ ...btn, backgroundColor: "#2563eb" }} onClick={combineAndRun}>Combine & Run</button>
-        <button style={{ ...btn, backgroundColor: "#16a34a" }} onClick={downloadCombined}>Download</button>
-        <button style={{ ...btn, backgroundColor: "#f59e0b", color: "#1f2937" }} onClick={shareCombined}>Share</button>
-        <button style={{ ...btn, backgroundColor: "#64748b" }} onClick={clearAll}>Clear All</button>
+        <ActionBtn bg="#2563eb" onClick={combineAndRun} icon={<Play size={14} />} label="Run" />
+        <ActionBtn bg="#16a34a" onClick={downloadCombined} icon={<Download size={14} />} label="Save" />
+        <ActionBtn bg="#f59e0b" color="#1f2937" onClick={shareCombined} icon={<Share2 size={14} />} label="Share" />
+        <ActionBtn bg="#64748b" onClick={clearAll} icon={<Trash2 size={14} />} label="Clear" />
       </div>
 
       <BottomNav />
     </div>
+  );
+}
+
+/* ---------- helpers / subcomponents ---------- */
+
+function htmlWrapper(body: string) {
+  return `<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset="utf-8" />\n    <link rel="stylesheet" href="style.css" />\n  </head>\n  <body>\n    ${body}\n    <script src="script.js"><\/script>\n  </body>\n</html>\n`;
+}
+
+function triggerDownload(text: string, name: string, mime: string) {
+  triggerBlob(new Blob([text], { type: mime }), name);
+}
+function triggerBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function Section({
+  title, children, actions, stats,
+}: {
+  title: string; children: React.ReactNode;
+  actions?: React.ReactNode; stats?: string;
+}) {
+  return (
+    <section style={{
+      background: "var(--surface)", borderRadius: 12, padding: 12,
+      boxShadow: "var(--shadow)", marginBottom: 12,
+      border: "1px solid var(--border)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--text)", letterSpacing: 0.3 }}>
+          {title}
+        </h2>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {stats && <span style={statText}>{stats}</span>}
+          {actions}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function DetectChips({ d }: { d: DetectResult }) {
+  const items: Array<[string, boolean]> = [["HTML", d.html], ["CSS", d.css], ["JS", d.js]];
+  return (
+    <div style={{ display: "flex", gap: 4 }}>
+      {items.map(([k, on]) => (
+        <span key={k} style={{
+          fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999,
+          background: on ? "rgba(34,197,94,0.15)" : "rgba(148,163,184,0.15)",
+          color: on ? "#16a34a" : "var(--text-faint)",
+          border: `1px solid ${on ? "rgba(34,197,94,0.3)" : "var(--border)"}`,
+        }}>
+          {on ? "✓" : "·"} {k}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const statText: React.CSSProperties = {
+  fontSize: 10, color: "var(--text-faint)", fontWeight: 600, letterSpacing: 0.3,
+};
+
+const primaryBtn: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 6,
+  padding: "8px 12px", background: "var(--accent)",
+  color: "white", border: 0, borderRadius: 8, fontSize: 12, fontWeight: 700,
+  cursor: "pointer", minHeight: 36,
+};
+
+function ToolbarButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "8px 10px", background: "var(--surface)",
+        color: "var(--text)", border: "1px solid var(--border)",
+        borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+        minHeight: 36, boxShadow: "var(--shadow)",
+      }}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+function IconAction({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 3,
+        padding: "4px 8px", background: "transparent",
+        color: "var(--text-muted)", border: "1px solid var(--border)",
+        borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer",
+      }}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+function ActionBtn({
+  onClick, icon, label, bg, color = "white",
+}: {
+  onClick: () => void; icon: React.ReactNode; label: string; bg: string; color?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        flex: "1 1 0", minWidth: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
+        padding: "10px 4px", background: bg, color,
+        border: 0, borderRadius: 8, fontSize: 12, fontWeight: 700,
+        cursor: "pointer", minHeight: 40,
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        boxShadow: "0 1px 2px rgba(15,23,42,0.15)",
+      }}
+    >
+      {icon} {label}
+    </button>
   );
 }

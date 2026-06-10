@@ -16,34 +16,52 @@ function Info() {
   const rows: Array<[string, string]> = [
     ["App Name", "CCnCS"],
     ["Full Name", "Code Combiner & Separator"],
-    ["Version", "1.0.0"],
+    ["Tagline", "Split. Combine. Preview."],
+    ["Version", "1.1.0"],
     ["Category", "Developer Tools / Utilities"],
     ["Company", "CodeTech"],
     ["Lead Developer", "Sachin Sheth"],
-    ["Platform", "Web (Progressive Web App ready)"],
+    ["Platform", "Web (Progressive Web App, installable)"],
     ["Minimum Requirements", "Any modern browser (Chrome, Safari, Firefox, Edge)"],
-    ["Permissions", "Clipboard write (for Share)"],
-    ["Offline Support", "Works fully client-side after first load"],
+    ["Permissions", "Clipboard write (for Copy/Share)"],
+    ["Offline Support", "Yes — full offline use after first load"],
+    ["Storage", "Local only (theme preference). No personal data."],
     ["License", "© CodeTech. All rights reserved."],
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f5f7fb", color: "#0f172a", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif", paddingBottom: 60 }}>
+    <div style={{
+      minHeight: "100vh", background: "var(--bg)", color: "var(--text)",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
+      paddingBottom: 70,
+    }}>
       <AppHeader />
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: 20 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", border: "1px solid #eee" }}>
-          <tbody>
-            {rows.map(([k, v]) => (
-              <tr key={k}>
-                <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", fontWeight: "bold", width: "40%", background: "#fafafa" }}>{k}</td>
-                <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{v}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: 18 }}>
+        <h1 style={{ fontSize: 22, margin: "4px 0 12px" }}>App Info</h1>
+        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", boxShadow: "var(--shadow)" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <tbody>
+              {rows.map(([k, v], i) => (
+                <tr key={k}>
+                  <th scope="row" style={{
+                    padding: "10px 12px",
+                    borderBottom: i === rows.length - 1 ? "none" : "1px solid var(--border)",
+                    fontWeight: 700, width: "42%", background: "var(--surface-2)",
+                    textAlign: "left", color: "var(--text)", fontSize: 13,
+                  }}>{k}</th>
+                  <td style={{
+                    padding: "10px 12px",
+                    borderBottom: i === rows.length - 1 ? "none" : "1px solid var(--border)",
+                    color: "var(--text-muted)", fontSize: 13,
+                  }}>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        <p style={{ marginTop: 24 }}>
-          <Link to="/">← Back home</Link>
+        <p style={{ marginTop: 20 }}>
+          <Link to="/" style={{ color: "var(--accent)" }}>← Back home</Link>
         </p>
       </div>
       <BottomNav />

@@ -1,12 +1,13 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import { Home, Code2, Info, Shield, FileText } from "lucide-react";
 
 const tabs = [
-  { to: "/", label: "Home" },
-  { to: "/app", label: "App" },
-  { to: "/about", label: "About" },
-  { to: "/privacy", label: "Privacy" },
-  { to: "/info", label: "Info" },
-];
+  { to: "/", label: "Home", Icon: Home },
+  { to: "/app", label: "App", Icon: Code2 },
+  { to: "/about", label: "About", Icon: Info },
+  { to: "/privacy", label: "Privacy", Icon: Shield },
+  { to: "/info", label: "Info", Icon: FileText },
+] as const;
 
 export function BottomNav() {
   const location = useLocation();
@@ -14,6 +15,7 @@ export function BottomNav() {
 
   return (
     <nav
+      aria-label="Primary"
       style={{
         position: "fixed",
         bottom: 0,
@@ -23,34 +25,39 @@ export function BottomNav() {
         display: "flex",
         justifyContent: "space-around",
         alignItems: "center",
-        background: "#ffffff",
-        borderTop: "1px solid #e2e8f0",
-        boxShadow: "0 -2px 8px rgba(15,23,42,0.06)",
-        height: 52,
+        background: "var(--surface)",
+        borderTop: "1px solid var(--border)",
+        boxShadow: "0 -2px 8px rgba(15,23,42,0.08)",
+        height: 56,
+        paddingBottom: "env(safe-area-inset-bottom, 0)",
       }}
     >
-      {tabs.map((t) => {
-        const active = current === t.to;
+      {tabs.map(({ to, label, Icon }) => {
+        const active = current === to;
         return (
           <Link
-            key={t.to}
-            to={t.to}
+            key={to}
+            to={to}
+            aria-current={active ? "page" : undefined}
             style={{
               flex: 1,
               textAlign: "center",
-              fontSize: 11,
-              fontWeight: active ? 700 : 400,
-              color: active ? "#6366f1" : "#64748b",
+              fontSize: 10,
+              fontWeight: active ? 700 : 500,
+              color: active ? "var(--accent)" : "var(--text-faint)",
               textDecoration: "none",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 2,
               height: "100%",
-              borderTop: active ? "2px solid #6366f1" : "2px solid transparent",
+              borderTop: active ? "2px solid var(--accent)" : "2px solid transparent",
               paddingTop: 2,
             }}
           >
-            {t.label}
+            <Icon size={18} aria-hidden />
+            {label}
           </Link>
         );
       })}
