@@ -1,20 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { html_beautify, css_beautify, js_beautify } from "js-beautify";
 import {
   Play, Download, Share2, Trash2, Copy, Sparkles, Wand2,
-  FileArchive, FileDown, Scissors,
+  FileArchive, FileDown, Scissors, Minimize2, ShieldCheck, Search,
+  LayoutTemplate, History, Save,
 } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
 import { BottomNav } from "@/components/BottomNav";
 import { CodeEditor } from "@/components/CodeEditor";
 import {
-  SAMPLE_HTML, detectParts, countLines, byteSize, formatSize,
+  SAMPLE_HTML, TEMPLATES, detectParts, countLines, byteSize, formatSize,
   type DetectResult,
 } from "@/lib/sample";
+import { minifyHTML, minifyCSS, minifyJS } from "@/lib/minify";
+import { validateHTML, validateCSS, validateJS, type ValidationIssue } from "@/lib/validate";
+import { listRecent, saveRecent, deleteRecent, type RecentProject } from "@/lib/recent";
 
 export const Route = createFileRoute("/app")({
   head: () => ({
@@ -23,12 +28,14 @@ export const Route = createFileRoute("/app")({
       {
         name: "description",
         content:
-          "Separate combined HTML into HTML, CSS and JS; beautify, combine, preview, copy, download, share, and export as ZIP.",
+          "Separate combined HTML into HTML, CSS and JS; beautify, minify, validate, find/replace, preview, export ZIP.",
       },
     ],
   }),
   component: AppPage,
 });
+
+type Panel = null | "find" | "templates" | "recent" | "validate";
 
 function AppPage() {
   const [combined, setCombined] = useState("");
@@ -37,10 +44,14 @@ function AppPage() {
   const [jsCode, setJsCode] = useState("");
   const [detected, setDetected] = useState<DetectResult>({ html: false, css: false, js: false });
   const [dragOver, setDragOver] = useState(false);
+  const [panel, setPanel] = useState<Panel>(null);
+  const [recent, setRecent] = useState<RecentProject[]>([]);
+  const [findText, setFindText] = useState("");
+  const [replaceText, setReplaceText] = useState("");
+  const [matchCase, setMatchCase] = useState(false);
   const previewRef = useRef<HTMLIFrameElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Load sample if ?sample=1
   useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
@@ -49,13 +60,30 @@ function AppPage() {
         doSeparate(SAMPLE_HTML);
       }
     }
+    setRecent(listRecent());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-detect whenever combined changes
   useEffect(() => {
     setDetected(detectParts(combined));
   }, [combined]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+      if (k === "s") { e.preventDefault(); downloadCombined(); }
+      else if (k === "b") { e.preventDefault(); beautifyAll(); }
+      else if (k === "enter") { e.preventDefault(); combineAndRun(); }
+      else if (k === "f") { e.preventDefault(); setPanel((p) => (p === "find" ? null : "find")); }
+      else if (k === "m" && e.shiftKey) { e.preventDefault(); minifyAll(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [htmlCode, cssCode, jsCode, combined]);
 
   function doSeparate(input: string) {
     const src = input ?? combined;
@@ -92,10 +120,7 @@ function AppPage() {
   }
 
   function clearAll() {
-    setCombined("");
-    setHtmlCode("");
-    setCssCode("");
-    setJsCode("");
+    setCombined(""); setHtmlCode(""); setCssCode(""); setJsCode("");
     if (previewRef.current) previewRef.current.srcdoc = "";
     toast("Cleared");
   }
@@ -108,34 +133,19 @@ function AppPage() {
   async function shareCombined() {
     const text = `HTML:\n${htmlCode}\n\nCSS:\n${cssCode}\n\nJS:\n${jsCode}`;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: "CCnCS code", text });
-        return;
-      }
+      if (navigator.share) { await navigator.share({ title: "CCnCS code", text }); return; }
       await navigator.clipboard.writeText(text);
       toast.success("Code copied to clipboard");
-    } catch (err) {
-      toast.error("Share failed: " + (err as Error).message);
-    }
+    } catch (err) { toast.error("Share failed: " + (err as Error).message); }
   }
 
   async function copyText(label: string, text: string) {
-    if (!text) {
-      toast.error(`${label} is empty`);
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${label} copied`);
-    } catch {
-      toast.error("Clipboard not available");
-    }
+    if (!text) { toast.error(`${label} is empty`); return; }
+    try { await navigator.clipboard.writeText(text); toast.success(`${label} copied`); }
+    catch { toast.error("Clipboard not available"); }
   }
 
-  function loadSample() {
-    setCombined(SAMPLE_HTML);
-    doSeparate(SAMPLE_HTML);
-  }
+  function loadSample() { setCombined(SAMPLE_HTML); doSeparate(SAMPLE_HTML); }
 
   function beautifyAll() {
     try {
@@ -144,10 +154,27 @@ function AppPage() {
       if (jsCode) setJsCode(js_beautify(jsCode, { indent_size: 2 }));
       if (combined) setCombined(html_beautify(combined, { indent_size: 2, wrap_line_length: 100 }));
       toast.success("Code beautified");
-    } catch (err) {
-      toast.error("Beautify failed: " + (err as Error).message);
-    }
+    } catch (err) { toast.error("Beautify failed: " + (err as Error).message); }
   }
+
+  function minifyAll() {
+    try {
+      if (htmlCode) setHtmlCode(minifyHTML(htmlCode));
+      if (cssCode) setCssCode(minifyCSS(cssCode));
+      if (jsCode) setJsCode(minifyJS(jsCode));
+      if (combined) setCombined(minifyHTML(combined));
+      toast.success("Code minified");
+    } catch (err) { toast.error("Minify failed: " + (err as Error).message); }
+  }
+
+  const validation = useMemo(() => ({
+    html: validateHTML(htmlCode || combined),
+    css: validateCSS(cssCode),
+    js: validateJS(jsCode),
+  }), [htmlCode, cssCode, jsCode, combined]);
+
+  const validationTotal = validation.html.length + validation.css.length + validation.js.length;
+  const hasErrors = [...validation.html, ...validation.css, ...validation.js].some((i) => i.level === "error");
 
   async function downloadZip() {
     try {
@@ -159,37 +186,76 @@ function AppPage() {
       const blob = await zip.generateAsync({ type: "blob" });
       triggerBlob(blob, "ccncs-export.zip");
       toast.success("ZIP downloaded");
-    } catch (err) {
-      toast.error("ZIP failed: " + (err as Error).message);
-    }
+    } catch (err) { toast.error("ZIP failed: " + (err as Error).message); }
   }
 
   function downloadPart(name: string, content: string, mime: string) {
-    if (!content) {
-      toast.error(`${name} is empty`);
-      return;
-    }
+    if (!content) { toast.error(`${name} is empty`); return; }
     triggerDownload(content, name, mime);
     toast.success(`Downloaded ${name}`);
   }
 
-  // Drag & drop import
   function onDrop(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setDragOver(false);
+    e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    readFile(file);
+    if (file) readFile(file);
   }
   function readFile(file: File) {
     const reader = new FileReader();
     reader.onload = () => {
       const text = String(reader.result || "");
-      setCombined(text);
-      doSeparate(text);
+      setCombined(text); doSeparate(text);
     };
     reader.onerror = () => toast.error("Could not read file");
     reader.readAsText(file);
+  }
+
+  // Find & Replace
+  function applyReplace(all: boolean) {
+    if (!findText) { toast.error("Enter text to find"); return; }
+    const flags = (matchCase ? "g" : "gi");
+    const escaped = findText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(escaped, flags);
+    let count = 0;
+    const sub = (s: string) => s.replace(re, (m) => {
+      if (!all && count > 0) return m;
+      count++; return replaceText;
+    });
+    setHtmlCode(sub(htmlCode));
+    setCssCode(sub(cssCode));
+    setJsCode(sub(jsCode));
+    setCombined(sub(combined));
+    toast.success(`Replaced ${count} match${count === 1 ? "" : "es"}`);
+  }
+  function findCount() {
+    if (!findText) return 0;
+    const flags = (matchCase ? "g" : "gi");
+    const escaped = findText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(escaped, flags);
+    const all = [htmlCode, cssCode, jsCode, combined].join("\n");
+    return (all.match(re) || []).length;
+  }
+
+  // Templates & Recent
+  function loadTemplate(id: string) {
+    const t = TEMPLATES.find((x) => x.id === id);
+    if (!t) return;
+    setCombined(t.html); doSeparate(t.html);
+    setPanel(null); toast.success(`Loaded: ${t.name}`);
+  }
+  function saveProject() {
+    const name = window.prompt("Project name:", `Project ${new Date().toLocaleString()}`);
+    if (!name) return;
+    saveRecent({ name, html: htmlCode, css: cssCode, js: jsCode });
+    setRecent(listRecent());
+    toast.success("Saved to Recent");
+  }
+  function loadRecent(r: RecentProject) {
+    setHtmlCode(r.html); setCssCode(r.css); setJsCode(r.js); setCombined("");
+    setPanel(null); toast.success(`Loaded: ${r.name}`);
+  }
+  function removeRecent(id: string) {
+    deleteRecent(id); setRecent(listRecent());
   }
 
   const totalSize = byteSize(htmlCode) + byteSize(cssCode) + byteSize(jsCode);
@@ -221,13 +287,22 @@ function AppPage() {
 
       <div style={{ padding: 12, paddingBottom: 130, maxWidth: 960, margin: "0 auto" }}>
         {/* Toolbar */}
-        <div style={{
-          display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12,
-        }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
           <ToolbarButton onClick={loadSample} icon={<Sparkles size={14} />} label="Sample" />
+          <ToolbarButton onClick={() => setPanel(panel === "templates" ? null : "templates")} icon={<LayoutTemplate size={14} />} label="Templates" />
           <ToolbarButton onClick={beautifyAll} icon={<Wand2 size={14} />} label="Beautify" />
+          <ToolbarButton onClick={minifyAll} icon={<Minimize2 size={14} />} label="Minify" />
+          <ToolbarButton
+            onClick={() => setPanel(panel === "validate" ? null : "validate")}
+            icon={<ShieldCheck size={14} />}
+            label={`Validate${validationTotal ? ` (${validationTotal})` : ""}`}
+            tone={hasErrors ? "danger" : validationTotal ? "warn" : undefined}
+          />
+          <ToolbarButton onClick={() => setPanel(panel === "find" ? null : "find")} icon={<Search size={14} />} label="Find" />
           <ToolbarButton onClick={() => fileRef.current?.click()} icon={<FileDown size={14} />} label="Import" />
           <ToolbarButton onClick={downloadZip} icon={<FileArchive size={14} />} label="Export ZIP" />
+          <ToolbarButton onClick={saveProject} icon={<Save size={14} />} label="Save" />
+          <ToolbarButton onClick={() => setPanel(panel === "recent" ? null : "recent")} icon={<History size={14} />} label={`Recent${recent.length ? ` (${recent.length})` : ""}`} />
           <input
             ref={fileRef} type="file" accept=".html,.htm,text/html"
             style={{ display: "none" }}
@@ -235,21 +310,88 @@ function AppPage() {
           />
         </div>
 
+        {/* Panels */}
+        {panel === "find" && (
+          <PanelBox title="Find & Replace" onClose={() => setPanel(null)}>
+            <div style={{ display: "grid", gap: 8 }}>
+              <input
+                placeholder="Find"
+                value={findText}
+                onChange={(e) => setFindText(e.target.value)}
+                style={inputStyle}
+              />
+              <input
+                placeholder="Replace with"
+                value={replaceText}
+                onChange={(e) => setReplaceText(e.target.value)}
+                style={inputStyle}
+              />
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)" }}>
+                <input type="checkbox" checked={matchCase} onChange={(e) => setMatchCase(e.target.checked)} />
+                Match case
+              </label>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={() => applyReplace(false)} style={primaryBtn}>Replace</button>
+                <button onClick={() => applyReplace(true)} style={primaryBtn}>Replace All</button>
+                <span style={statText}>{findText ? `${findCount()} match(es)` : "Enter text to search"}</span>
+              </div>
+            </div>
+          </PanelBox>
+        )}
+
+        {panel === "templates" && (
+          <PanelBox title="Templates" onClose={() => setPanel(null)}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 8 }}>
+              {TEMPLATES.map((t) => (
+                <button key={t.id} onClick={() => loadTemplate(t.id)} style={tileBtn}>
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </PanelBox>
+        )}
+
+        {panel === "recent" && (
+          <PanelBox title="Recent Projects" onClose={() => setPanel(null)}>
+            {recent.length === 0 ? (
+              <p style={{ ...statText, margin: 0 }}>No saved projects yet. Use Save to store one.</p>
+            ) : (
+              <div style={{ display: "grid", gap: 6 }}>
+                {recent.map((r) => (
+                  <div key={r.id} style={recentRow}>
+                    <button onClick={() => loadRecent(r)} style={{ ...recentLoadBtn }}>
+                      <span style={{ fontWeight: 700 }}>{r.name}</span>
+                      <span style={statText}>{new Date(r.ts).toLocaleString()}</span>
+                    </button>
+                    <button onClick={() => removeRecent(r.id)} aria-label="Delete" style={recentDelBtn}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </PanelBox>
+        )}
+
+        {panel === "validate" && (
+          <PanelBox title="Validation" onClose={() => setPanel(null)}>
+            <ValidationList label="HTML" items={validation.html} />
+            <ValidationList label="CSS" items={validation.css} />
+            <ValidationList label="JavaScript" items={validation.js} />
+            {validationTotal === 0 && (
+              <p style={{ ...statText, margin: 0, color: "var(--success)" }}>✓ No issues detected.</p>
+            )}
+          </PanelBox>
+        )}
+
         {/* Combined input */}
         <Section title="Full Combined HTML">
           <CodeEditor
-            value={combined}
-            onChange={setCombined}
-            language="html"
-            height={160}
+            value={combined} onChange={setCombined} language="html" height={160}
             placeholder="Paste full HTML code here, or drag & drop a .html file..."
           />
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
-            <button
-              onClick={() => doSeparate(combined)}
-              style={primaryBtn}
-              aria-label="Separate code"
-            >
+            <button onClick={() => doSeparate(combined)} style={primaryBtn} aria-label="Separate code">
               <Scissors size={14} /> Separate
             </button>
             <DetectChips d={detected} />
@@ -259,7 +401,6 @@ function AppPage() {
           </div>
         </Section>
 
-        {/* HTML */}
         <Section
           title="HTML"
           actions={
@@ -273,7 +414,6 @@ function AppPage() {
           <CodeEditor value={htmlCode} onChange={setHtmlCode} language="html" height={150} />
         </Section>
 
-        {/* CSS */}
         <Section
           title="CSS"
           actions={
@@ -287,7 +427,6 @@ function AppPage() {
           <CodeEditor value={cssCode} onChange={setCssCode} language="css" height={140} />
         </Section>
 
-        {/* JS */}
         <Section
           title="JavaScript"
           actions={
@@ -301,7 +440,6 @@ function AppPage() {
           <CodeEditor value={jsCode} onChange={setJsCode} language="js" height={140} />
         </Section>
 
-        {/* Preview */}
         <Section title="Live Preview" stats={`Total ${formatSize(totalSize)}`}>
           <iframe
             ref={previewRef}
@@ -313,17 +451,19 @@ function AppPage() {
             }}
           />
         </Section>
+
+        <p style={{ fontSize: 10, color: "var(--text-faint)", textAlign: "center", marginTop: 4 }}>
+          Shortcuts: Ctrl/Cmd+S Save · Ctrl/Cmd+B Beautify · Ctrl/Cmd+Enter Run · Ctrl/Cmd+F Find · Ctrl/Cmd+Z Undo
+        </p>
       </div>
 
-      {/* Fixed action bar */}
+      <AppFooter />
+
       <div
         style={{
-          position: "fixed",
-          bottom: 56,
-          left: 0, right: 0, zIndex: 19,
+          position: "fixed", bottom: 56, left: 0, right: 0, zIndex: 19,
           display: "flex", gap: 6, alignItems: "center",
-          padding: "8px 10px",
-          background: "var(--surface)",
+          padding: "8px 10px", background: "var(--surface)",
           borderTop: "1px solid var(--border)",
           boxShadow: "0 -2px 8px rgba(15,23,42,0.08)",
         }}
@@ -351,15 +491,11 @@ function triggerDownload(text: string, name: string, mime: string) {
 function triggerBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
+  a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-function Section({
-  title, children, actions, stats,
-}: {
+function Section({ title, children, actions, stats }: {
   title: string; children: React.ReactNode;
   actions?: React.ReactNode; stats?: string;
 }) {
@@ -380,6 +516,41 @@ function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+function PanelBox({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <section style={{
+      background: "var(--surface)", borderRadius: 12, padding: 12,
+      boxShadow: "var(--shadow)", marginBottom: 12,
+      border: "1px solid var(--accent)",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>{title}</h3>
+        <button onClick={onClose} style={{
+          background: "transparent", border: 0, cursor: "pointer", color: "var(--text-muted)",
+          fontSize: 12, fontWeight: 700,
+        }}>✕</button>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function ValidationList({ label, items }: { label: string; items: ValidationIssue[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>{label}</div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ color: it.level === "error" ? "var(--danger)" : "var(--warning)" }}>
+            {it.line ? `Line ${it.line}: ` : ""}{it.msg}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -404,15 +575,45 @@ function DetectChips({ d }: { d: DetectResult }) {
 const statText: React.CSSProperties = {
   fontSize: 10, color: "var(--text-faint)", fontWeight: 600, letterSpacing: 0.3,
 };
-
 const primaryBtn: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 6,
   padding: "8px 12px", background: "var(--accent)",
   color: "white", border: 0, borderRadius: 8, fontSize: 12, fontWeight: 700,
   cursor: "pointer", minHeight: 36,
 };
+const inputStyle: React.CSSProperties = {
+  padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 8,
+  background: "var(--code-bg)", color: "var(--text)", fontSize: 13, outline: "none",
+};
+const tileBtn: React.CSSProperties = {
+  padding: "12px 10px", background: "var(--surface-2)",
+  color: "var(--text)", border: "1px solid var(--border)",
+  borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
+};
+const recentRow: React.CSSProperties = {
+  display: "flex", gap: 6, alignItems: "stretch",
+  border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden",
+};
+const recentLoadBtn: React.CSSProperties = {
+  flex: 1, textAlign: "left", padding: "8px 10px", background: "var(--surface-2)",
+  color: "var(--text)", border: 0, cursor: "pointer",
+  display: "flex", flexDirection: "column", gap: 2, fontSize: 12,
+};
+const recentDelBtn: React.CSSProperties = {
+  padding: "8px 10px", background: "transparent", border: 0,
+  color: "var(--danger)", cursor: "pointer",
+};
 
-function ToolbarButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+function ToolbarButton({ onClick, icon, label, tone }: {
+  onClick: () => void; icon: React.ReactNode; label: string;
+  tone?: "warn" | "danger";
+}) {
+  const toneStyle: React.CSSProperties =
+    tone === "danger"
+      ? { borderColor: "var(--danger)", color: "var(--danger)" }
+      : tone === "warn"
+      ? { borderColor: "var(--warning)", color: "var(--warning)" }
+      : {};
   return (
     <button
       onClick={onClick}
@@ -422,6 +623,7 @@ function ToolbarButton({ onClick, icon, label }: { onClick: () => void; icon: Re
         color: "var(--text)", border: "1px solid var(--border)",
         borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
         minHeight: 36, boxShadow: "var(--shadow)",
+        ...toneStyle,
       }}
     >
       {icon} {label}
@@ -432,8 +634,7 @@ function ToolbarButton({ onClick, icon, label }: { onClick: () => void; icon: Re
 function IconAction({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button
-      onClick={onClick}
-      aria-label={label}
+      onClick={onClick} aria-label={label}
       style={{
         display: "inline-flex", alignItems: "center", gap: 3,
         padding: "4px 8px", background: "transparent",
@@ -446,15 +647,12 @@ function IconAction({ onClick, icon, label }: { onClick: () => void; icon: React
   );
 }
 
-function ActionBtn({
-  onClick, icon, label, bg, color = "white",
-}: {
+function ActionBtn({ onClick, icon, label, bg, color = "white" }: {
   onClick: () => void; icon: React.ReactNode; label: string; bg: string; color?: string;
 }) {
   return (
     <button
-      onClick={onClick}
-      aria-label={label}
+      onClick={onClick} aria-label={label}
       style={{
         flex: "1 1 0", minWidth: 0,
         display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
