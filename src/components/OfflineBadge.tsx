@@ -18,10 +18,11 @@ export function OfflineBadge() {
   }, []);
   if (!mounted) return null;
   const Icon = online ? Wifi : WifiOff;
+  const label = online ? "Offline Ready" : "Offline";
   return (
     <span
-      title={online ? "Online" : "Offline — app works fully"}
-      aria-label={online ? "Online" : "Offline"}
+      title={online ? "Online — works offline too" : "Offline — app still works"}
+      aria-label={label}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -37,7 +38,7 @@ export function OfflineBadge() {
       }}
     >
       <Icon size={11} />
-      {online ? "Online" : "Offline"}
+      {label}
     </span>
   );
 }
