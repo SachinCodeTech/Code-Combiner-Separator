@@ -1,6 +1,91 @@
-export const APP_VERSION = "1.2.0";
+export const APP_VERSION = "1.3.0";
+
+export const VERSION_HISTORY: { version: string; date: string; notes: string[] }[] = [
+  {
+    version: "1.3.0",
+    date: "2026-06-13",
+    notes: [
+      "Tools sidebar (open via logo)",
+      "Minify stats (before/after, % saved)",
+      "Validation positive confirmation",
+      "Copy Combined / Copy All",
+      "Framework starter templates (React, Vue, TypeScript)",
+      "Version History page",
+    ],
+  },
+  {
+    version: "1.2.0",
+    date: "2026-06-12",
+    notes: ["Minify", "Validate", "Find & Replace", "Templates", "Recent Projects", "Beautify shortcut"],
+  },
+  {
+    version: "1.1.0",
+    date: "2026-06-11",
+    notes: ["Dark/Light/Auto theme", "PWA install + offline", "ZIP export", "Drag & drop", "CodeMirror editor"],
+  },
+  { version: "1.0.0", date: "2026-06-10", notes: ["Initial release: Separate, Combine, Preview"] },
+];
 
 export const TEMPLATES: { id: string; name: string; html: string }[] = [
+  {
+    id: "html-starter",
+    name: "HTML Starter",
+    html: `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>HTML Starter</title>
+<style>body{font-family:system-ui;margin:40px;color:#111}</style></head>
+<body><h1>Hello, world</h1><p>Edit and preview.</p>
+<script>console.log('ready');</script></body></html>`,
+  },
+  {
+    id: "react-starter",
+    name: "React Starter",
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>React Starter</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>body{font-family:system-ui;margin:40px}button{padding:8px 14px}</style></head>
+<body><div id="root"></div>
+<script type="text/babel">
+function App(){const[n,setN]=React.useState(0);
+return <div><h1>React {React.version}</h1>
+<button onClick={()=>setN(n+1)}>Count: {n}</button></div>;}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>`,
+  },
+  {
+    id: "vue-starter",
+    name: "Vue Starter",
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Vue Starter</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>body{font-family:system-ui;margin:40px}button{padding:8px 14px}</style></head>
+<body><div id="app"><h1>Vue {{ version }}</h1>
+<button @click="n++">Count: {{ n }}</button></div>
+<script>
+const{createApp,ref}=Vue;
+createApp({setup(){return{n:ref(0),version:Vue.version}}}).mount('#app');
+</script></body></html>`,
+  },
+  {
+    id: "ts-starter",
+    name: "TypeScript Starter",
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>TypeScript Starter</title>
+<script src="https://unpkg.com/typescript@5/lib/typescript.js"></script>
+<style>body{font-family:system-ui;margin:40px}</style></head>
+<body><h1>TypeScript Starter</h1><pre id="out"></pre>
+<script type="text/typescript" id="src">
+interface User { name: string; age: number }
+const u: User = { name: 'Ada', age: 30 };
+document.getElementById('out')!.textContent = JSON.stringify(u, null, 2);
+</script>
+<script>
+const src=document.getElementById('src').textContent;
+const js=ts.transpile(src,{target:ts.ScriptTarget.ES2020});
+new Function(js)();
+</script></body></html>`,
+  },
   {
     id: "landing",
     name: "Landing Page",

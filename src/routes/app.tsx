@@ -49,6 +49,8 @@ function AppPage() {
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
   const [matchCase, setMatchCase] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [minifyStats, setMinifyStats] = useState<{ before: number; after: number } | null>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -159,12 +161,28 @@ function AppPage() {
 
   function minifyAll() {
     try {
-      if (htmlCode) setHtmlCode(minifyHTML(htmlCode));
-      if (cssCode) setCssCode(minifyCSS(cssCode));
-      if (jsCode) setJsCode(minifyJS(jsCode));
-      if (combined) setCombined(minifyHTML(combined));
-      toast.success("Code minified");
+      const before = byteSize(htmlCode) + byteSize(cssCode) + byteSize(jsCode) + byteSize(combined);
+      const nh = htmlCode ? minifyHTML(htmlCode) : htmlCode;
+      const nc = cssCode ? minifyCSS(cssCode) : cssCode;
+      const nj = jsCode ? minifyJS(jsCode) : jsCode;
+      const nco = combined ? minifyHTML(combined) : combined;
+      setHtmlCode(nh); setCssCode(nc); setJsCode(nj); setCombined(nco);
+      const after = byteSize(nh) + byteSize(nc) + byteSize(nj) + byteSize(nco);
+      setMinifyStats({ before, after });
+      const saved = before > 0 ? Math.round((1 - after / before) * 100) : 0;
+      toast.success(`Minified: ${formatSize(before)} → ${formatSize(after)} (saved ${saved}%)`);
     } catch (err) { toast.error("Minify failed: " + (err as Error).message); }
+  }
+
+  async function copyCombined() {
+    const text = buildHTML();
+    try { await navigator.clipboard.writeText(text); toast.success("Combined HTML copied"); }
+    catch { toast.error("Clipboard not available"); }
+  }
+  async function copyAllParts() {
+    const text = `<!-- HTML -->\n${htmlCode}\n\n/* CSS */\n${cssCode}\n\n// JS\n${jsCode}`;
+    try { await navigator.clipboard.writeText(text); toast.success("All parts copied"); }
+    catch { toast.error("Clipboard not available"); }
   }
 
   const validation = useMemo(() => ({
@@ -271,7 +289,71 @@ function AppPage() {
         margin: 0, minHeight: "100vh", paddingBottom: 70,
       }}
     >
-      <AppHeader />
+      <AppHeader logoIsToggle onLogoClick={() => setSidebarOpen(true)} />
+
+      {/* Tools Sidebar */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 40,
+            background: "rgba(15,23,42,0.45)",
+          }}
+        />
+      )}
+      <aside
+        aria-label="Tools"
+        style={{
+          position: "fixed", top: 0, bottom: 0, left: 0, zIndex: 41,
+          width: 260, maxWidth: "82vw",
+          background: "var(--surface)", borderRight: "1px solid var(--border)",
+          boxShadow: "2px 0 16px rgba(15,23,42,0.18)",
+          transform: sidebarOpen ? "translateX(0)" : "translateX(-105%)",
+          transition: "transform 220ms ease",
+          display: "flex", flexDirection: "column",
+          paddingTop: "env(safe-area-inset-top, 0)",
+        }}
+      >
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "14px 14px 10px", borderBottom: "1px solid var(--border)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/icon-192.png" width={28} height={28} style={{ borderRadius: 6 }} alt="" />
+            <strong style={{ fontSize: 14 }}>Tools</strong>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)} aria-label="Close sidebar"
+            style={{ background: "transparent", border: 0, fontSize: 18, cursor: "pointer", color: "var(--text-muted)" }}
+          >✕</button>
+        </div>
+        <nav style={{ padding: 10, display: "grid", gap: 6, overflowY: "auto" }}>
+          {[
+            { label: "Sample", icon: <Sparkles size={15} />, run: () => { loadSample(); setSidebarOpen(false); } },
+            { label: "Templates", icon: <LayoutTemplate size={15} />, run: () => { setPanel("templates"); setSidebarOpen(false); } },
+            { label: "Beautify", icon: <Wand2 size={15} />, run: () => { beautifyAll(); setSidebarOpen(false); } },
+            { label: "Minify", icon: <Minimize2 size={15} />, run: () => { minifyAll(); setSidebarOpen(false); } },
+            { label: `Validate${validationTotal ? ` (${validationTotal})` : ""}`, icon: <ShieldCheck size={15} />, run: () => { setPanel("validate"); setSidebarOpen(false); } },
+            { label: "Find & Replace", icon: <Search size={15} />, run: () => { setPanel("find"); setSidebarOpen(false); } },
+            { label: "Import HTML", icon: <FileDown size={15} />, run: () => { fileRef.current?.click(); setSidebarOpen(false); } },
+            { label: "Export ZIP", icon: <FileArchive size={15} />, run: () => { downloadZip(); setSidebarOpen(false); } },
+            { label: "Save Project", icon: <Save size={15} />, run: () => { saveProject(); setSidebarOpen(false); } },
+            { label: `Recent${recent.length ? ` (${recent.length})` : ""}`, icon: <History size={15} />, run: () => { setPanel("recent"); setSidebarOpen(false); } },
+            { label: "Copy Combined", icon: <Copy size={15} />, run: () => { copyCombined(); setSidebarOpen(false); } },
+            { label: "Copy All Parts", icon: <Copy size={15} />, run: () => { copyAllParts(); setSidebarOpen(false); } },
+          ].map((it) => (
+            <button key={it.label} onClick={it.run} style={sidebarItemBtn}>
+              <span style={{ display: "inline-flex", width: 22, justifyContent: "center" }}>{it.icon}</span>
+              <span>{it.label}</span>
+            </button>
+          ))}
+        </nav>
+        <input
+          ref={fileRef} type="file" accept=".html,.htm,text/html"
+          style={{ display: "none" }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); e.target.value = ""; }}
+        />
+      </aside>
 
       {dragOver && (
         <div style={{
@@ -286,29 +368,10 @@ function AppPage() {
       )}
 
       <div style={{ padding: 12, paddingBottom: 130, maxWidth: 960, margin: "0 auto" }}>
-        {/* Toolbar */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-          <ToolbarButton onClick={loadSample} icon={<Sparkles size={14} />} label="Sample" />
-          <ToolbarButton onClick={() => setPanel(panel === "templates" ? null : "templates")} icon={<LayoutTemplate size={14} />} label="Templates" />
-          <ToolbarButton onClick={beautifyAll} icon={<Wand2 size={14} />} label="Beautify" />
-          <ToolbarButton onClick={minifyAll} icon={<Minimize2 size={14} />} label="Minify" />
-          <ToolbarButton
-            onClick={() => setPanel(panel === "validate" ? null : "validate")}
-            icon={<ShieldCheck size={14} />}
-            label={`Validate${validationTotal ? ` (${validationTotal})` : ""}`}
-            tone={hasErrors ? "danger" : validationTotal ? "warn" : undefined}
-          />
-          <ToolbarButton onClick={() => setPanel(panel === "find" ? null : "find")} icon={<Search size={14} />} label="Find" />
-          <ToolbarButton onClick={() => fileRef.current?.click()} icon={<FileDown size={14} />} label="Import" />
-          <ToolbarButton onClick={downloadZip} icon={<FileArchive size={14} />} label="Export ZIP" />
-          <ToolbarButton onClick={saveProject} icon={<Save size={14} />} label="Save" />
-          <ToolbarButton onClick={() => setPanel(panel === "recent" ? null : "recent")} icon={<History size={14} />} label={`Recent${recent.length ? ` (${recent.length})` : ""}`} />
-          <input
-            ref={fileRef} type="file" accept=".html,.htm,text/html"
-            style={{ display: "none" }}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); e.target.value = ""; }}
-          />
-        </div>
+        <p style={{ fontSize: 11, color: "var(--text-faint)", margin: "0 0 10px", textAlign: "center" }}>
+          Tap the <strong>CCnCS logo</strong> in the header to open all tools.
+        </p>
+
 
         {/* Panels */}
         {panel === "find" && (
@@ -375,13 +438,34 @@ function AppPage() {
 
         {panel === "validate" && (
           <PanelBox title="Validation" onClose={() => setPanel(null)}>
-            <ValidationList label="HTML" items={validation.html} />
-            <ValidationList label="CSS" items={validation.css} />
-            <ValidationList label="JavaScript" items={validation.js} />
-            {validationTotal === 0 && (
-              <p style={{ ...statText, margin: 0, color: "var(--success)" }}>✓ No issues detected.</p>
+            <ValidationSummary label="HTML" items={validation.html} hasCode={!!(htmlCode || combined)} />
+            <ValidationSummary label="CSS" items={validation.css} hasCode={!!cssCode} />
+            <ValidationSummary label="JavaScript" items={validation.js} hasCode={!!jsCode} />
+            {validationTotal === 0 && (htmlCode || cssCode || jsCode || combined) && (
+              <p style={{ ...statText, margin: "6px 0 0", color: "#16a34a", fontSize: 12 }}>
+                ✓ All checks passed.
+              </p>
             )}
           </PanelBox>
+        )}
+
+        {minifyStats && (
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 10, padding: "8px 12px", marginBottom: 10,
+            display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8,
+          }}>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              <strong>Minify:</strong> {formatSize(minifyStats.before)} → {formatSize(minifyStats.after)}
+              {" · "}
+              <span style={{ color: "#16a34a", fontWeight: 700 }}>
+                Saved {minifyStats.before > 0 ? Math.round((1 - minifyStats.after / minifyStats.before) * 100) : 0}%
+              </span>
+            </span>
+            <button onClick={() => setMinifyStats(null)} style={{
+              background: "transparent", border: 0, color: "var(--text-faint)", fontSize: 12, cursor: "pointer",
+            }}>Dismiss</button>
+          </div>
         )}
 
         {/* Combined input */}
@@ -391,8 +475,11 @@ function AppPage() {
             placeholder="Paste full HTML code here, or drag & drop a .html file..."
           />
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
-            <button onClick={() => doSeparate(combined)} style={primaryBtn} aria-label="Separate code">
-              <Scissors size={14} /> Separate
+            <button onClick={() => doSeparate(combined)} style={primaryBtn} aria-label="Separate Code">
+              <Scissors size={14} /> Separate Code
+            </button>
+            <button onClick={copyCombined} style={{ ...primaryBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }} aria-label="Copy Combined">
+              <Copy size={14} /> Copy Combined
             </button>
             <DetectChips d={detected} />
             <span style={statText}>
@@ -400,6 +487,7 @@ function AppPage() {
             </span>
           </div>
         </Section>
+
 
         <Section
           title="HTML"
@@ -538,6 +626,31 @@ function PanelBox({ title, children, onClose }: { title: string; children: React
   );
 }
 
+function ValidationSummary({ label, items, hasCode }: { label: string; items: ValidationIssue[]; hasCode: boolean }) {
+  if (!hasCode) return null;
+  if (items.length === 0) {
+    return (
+      <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, padding: "4px 0" }}>
+        ✓ {label} Valid
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>
+        {label} — {items.length} issue{items.length === 1 ? "" : "s"}
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ color: it.level === "error" ? "var(--danger)" : "var(--warning)" }}>
+            {it.line ? `Line ${it.line}: ` : ""}{it.msg}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ValidationList({ label, items }: { label: string; items: ValidationIssue[] }) {
   if (items.length === 0) return null;
   return (
@@ -598,6 +711,13 @@ const recentLoadBtn: React.CSSProperties = {
   flex: 1, textAlign: "left", padding: "8px 10px", background: "var(--surface-2)",
   color: "var(--text)", border: 0, cursor: "pointer",
   display: "flex", flexDirection: "column", gap: 2, fontSize: 12,
+};
+const sidebarItemBtn: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 10,
+  padding: "10px 12px", background: "var(--surface-2)",
+  color: "var(--text)", border: "1px solid var(--border)",
+  borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+  textAlign: "left", minHeight: 42,
 };
 const recentDelBtn: React.CSSProperties = {
   padding: "8px 10px", background: "transparent", border: 0,
