@@ -438,13 +438,34 @@ function AppPage() {
 
         {panel === "validate" && (
           <PanelBox title="Validation" onClose={() => setPanel(null)}>
-            <ValidationList label="HTML" items={validation.html} />
-            <ValidationList label="CSS" items={validation.css} />
-            <ValidationList label="JavaScript" items={validation.js} />
-            {validationTotal === 0 && (
-              <p style={{ ...statText, margin: 0, color: "var(--success)" }}>✓ No issues detected.</p>
+            <ValidationSummary label="HTML" items={validation.html} hasCode={!!(htmlCode || combined)} />
+            <ValidationSummary label="CSS" items={validation.css} hasCode={!!cssCode} />
+            <ValidationSummary label="JavaScript" items={validation.js} hasCode={!!jsCode} />
+            {validationTotal === 0 && (htmlCode || cssCode || jsCode || combined) && (
+              <p style={{ ...statText, margin: "6px 0 0", color: "#16a34a", fontSize: 12 }}>
+                ✓ All checks passed.
+              </p>
             )}
           </PanelBox>
+        )}
+
+        {minifyStats && (
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 10, padding: "8px 12px", marginBottom: 10,
+            display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8,
+          }}>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              <strong>Minify:</strong> {formatSize(minifyStats.before)} → {formatSize(minifyStats.after)}
+              {" · "}
+              <span style={{ color: "#16a34a", fontWeight: 700 }}>
+                Saved {minifyStats.before > 0 ? Math.round((1 - minifyStats.after / minifyStats.before) * 100) : 0}%
+              </span>
+            </span>
+            <button onClick={() => setMinifyStats(null)} style={{
+              background: "transparent", border: 0, color: "var(--text-faint)", fontSize: 12, cursor: "pointer",
+            }}>Dismiss</button>
+          </div>
         )}
 
         {/* Combined input */}
@@ -454,8 +475,11 @@ function AppPage() {
             placeholder="Paste full HTML code here, or drag & drop a .html file..."
           />
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
-            <button onClick={() => doSeparate(combined)} style={primaryBtn} aria-label="Separate code">
-              <Scissors size={14} /> Separate
+            <button onClick={() => doSeparate(combined)} style={primaryBtn} aria-label="Separate Code">
+              <Scissors size={14} /> Separate Code
+            </button>
+            <button onClick={copyCombined} style={{ ...primaryBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }} aria-label="Copy Combined">
+              <Copy size={14} /> Copy Combined
             </button>
             <DetectChips d={detected} />
             <span style={statText}>
@@ -463,6 +487,7 @@ function AppPage() {
             </span>
           </div>
         </Section>
+
 
         <Section
           title="HTML"
