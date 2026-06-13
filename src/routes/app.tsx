@@ -49,6 +49,8 @@ function AppPage() {
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
   const [matchCase, setMatchCase] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [minifyStats, setMinifyStats] = useState<{ before: number; after: number } | null>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -159,12 +161,28 @@ function AppPage() {
 
   function minifyAll() {
     try {
-      if (htmlCode) setHtmlCode(minifyHTML(htmlCode));
-      if (cssCode) setCssCode(minifyCSS(cssCode));
-      if (jsCode) setJsCode(minifyJS(jsCode));
-      if (combined) setCombined(minifyHTML(combined));
-      toast.success("Code minified");
+      const before = byteSize(htmlCode) + byteSize(cssCode) + byteSize(jsCode) + byteSize(combined);
+      const nh = htmlCode ? minifyHTML(htmlCode) : htmlCode;
+      const nc = cssCode ? minifyCSS(cssCode) : cssCode;
+      const nj = jsCode ? minifyJS(jsCode) : jsCode;
+      const nco = combined ? minifyHTML(combined) : combined;
+      setHtmlCode(nh); setCssCode(nc); setJsCode(nj); setCombined(nco);
+      const after = byteSize(nh) + byteSize(nc) + byteSize(nj) + byteSize(nco);
+      setMinifyStats({ before, after });
+      const saved = before > 0 ? Math.round((1 - after / before) * 100) : 0;
+      toast.success(`Minified: ${formatSize(before)} → ${formatSize(after)} (saved ${saved}%)`);
     } catch (err) { toast.error("Minify failed: " + (err as Error).message); }
+  }
+
+  async function copyCombined() {
+    const text = buildHTML();
+    try { await navigator.clipboard.writeText(text); toast.success("Combined HTML copied"); }
+    catch { toast.error("Clipboard not available"); }
+  }
+  async function copyAllParts() {
+    const text = `<!-- HTML -->\n${htmlCode}\n\n/* CSS */\n${cssCode}\n\n// JS\n${jsCode}`;
+    try { await navigator.clipboard.writeText(text); toast.success("All parts copied"); }
+    catch { toast.error("Clipboard not available"); }
   }
 
   const validation = useMemo(() => ({
