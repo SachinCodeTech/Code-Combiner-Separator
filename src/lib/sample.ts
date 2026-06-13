@@ -1,4 +1,30 @@
-export const APP_VERSION = "1.2.0";
+export const APP_VERSION = "1.3.0";
+
+export const VERSION_HISTORY: { version: string; date: string; notes: string[] }[] = [
+  {
+    version: "1.3.0",
+    date: "2026-06-13",
+    notes: [
+      "Tools sidebar (open via logo)",
+      "Minify stats (before/after, % saved)",
+      "Validation positive confirmation",
+      "Copy Combined / Copy All",
+      "Framework starter templates (React, Vue, TypeScript)",
+      "Version History page",
+    ],
+  },
+  {
+    version: "1.2.0",
+    date: "2026-06-12",
+    notes: ["Minify", "Validate", "Find & Replace", "Templates", "Recent Projects", "Beautify shortcut"],
+  },
+  {
+    version: "1.1.0",
+    date: "2026-06-11",
+    notes: ["Dark/Light/Auto theme", "PWA install + offline", "ZIP export", "Drag & drop", "CodeMirror editor"],
+  },
+  { version: "1.0.0", date: "2026-06-10", notes: ["Initial release: Separate, Combine, Preview"] },
+];
 
 export const TEMPLATES: { id: string; name: string; html: string }[] = [
   {
