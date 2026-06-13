@@ -626,6 +626,31 @@ function PanelBox({ title, children, onClose }: { title: string; children: React
   );
 }
 
+function ValidationSummary({ label, items, hasCode }: { label: string; items: ValidationIssue[]; hasCode: boolean }) {
+  if (!hasCode) return null;
+  if (items.length === 0) {
+    return (
+      <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, padding: "4px 0" }}>
+        ✓ {label} Valid
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>
+        {label} — {items.length} issue{items.length === 1 ? "" : "s"}
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ color: it.level === "error" ? "var(--danger)" : "var(--warning)" }}>
+            {it.line ? `Line ${it.line}: ` : ""}{it.msg}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ValidationList({ label, items }: { label: string; items: ValidationIssue[] }) {
   if (items.length === 0) return null;
   return (
