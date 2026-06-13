@@ -662,6 +662,13 @@ const recentLoadBtn: React.CSSProperties = {
   color: "var(--text)", border: 0, cursor: "pointer",
   display: "flex", flexDirection: "column", gap: 2, fontSize: 12,
 };
+const sidebarItemBtn: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 10,
+  padding: "10px 12px", background: "var(--surface-2)",
+  color: "var(--text)", border: "1px solid var(--border)",
+  borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+  textAlign: "left", minHeight: 42,
+};
 const recentDelBtn: React.CSSProperties = {
   padding: "8px 10px", background: "transparent", border: 0,
   color: "var(--danger)", cursor: "pointer",
