@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
+import { APP_VERSION, VERSION_HISTORY } from "@/lib/sample";
 
 export const Route = createFileRoute("/info")({
   head: () => ({
@@ -17,7 +18,7 @@ function Info() {
     ["App Name", "CCnCS"],
     ["Full Name", "Code Combiner & Separator"],
     ["Tagline", "Split. Combine. Preview."],
-    ["Version", "1.1.0"],
+    ["Version", APP_VERSION],
     ["Category", "Developer Tools / Utilities"],
     ["Company", "CodeTech"],
     ["Lead Developer", "Sachin Sheth"],
