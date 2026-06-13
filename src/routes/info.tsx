@@ -61,9 +61,34 @@ function Info() {
           </table>
         </div>
 
+        <h2 style={{ fontSize: 18, margin: "24px 0 10px" }}>Version History</h2>
+        <div style={{ display: "grid", gap: 10 }}>
+          {VERSION_HISTORY.map((v) => (
+            <div key={v.version} style={{
+              background: "var(--surface)", border: "1px solid var(--border)",
+              borderRadius: 10, padding: 12, boxShadow: "var(--shadow)",
+            }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
+                <strong style={{ fontSize: 14 }}>v{v.version}</strong>
+                <span style={{ fontSize: 11, color: "var(--text-faint)" }}>{v.date}</span>
+                {v.version === APP_VERSION && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4,
+                    background: "rgba(99,102,241,0.15)", color: "var(--accent)",
+                  }}>CURRENT</span>
+                )}
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                {v.notes.map((n, i) => <li key={i}>{n}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+
         <p style={{ marginTop: 20 }}>
           <Link to="/" style={{ color: "var(--accent)" }}>← Back home</Link>
         </p>
+
       </div>
       <BottomNav />
     </div>
