@@ -289,7 +289,71 @@ function AppPage() {
         margin: 0, minHeight: "100vh", paddingBottom: 70,
       }}
     >
-      <AppHeader />
+      <AppHeader logoIsToggle onLogoClick={() => setSidebarOpen(true)} />
+
+      {/* Tools Sidebar */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 40,
+            background: "rgba(15,23,42,0.45)",
+          }}
+        />
+      )}
+      <aside
+        aria-label="Tools"
+        style={{
+          position: "fixed", top: 0, bottom: 0, left: 0, zIndex: 41,
+          width: 260, maxWidth: "82vw",
+          background: "var(--surface)", borderRight: "1px solid var(--border)",
+          boxShadow: "2px 0 16px rgba(15,23,42,0.18)",
+          transform: sidebarOpen ? "translateX(0)" : "translateX(-105%)",
+          transition: "transform 220ms ease",
+          display: "flex", flexDirection: "column",
+          paddingTop: "env(safe-area-inset-top, 0)",
+        }}
+      >
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "14px 14px 10px", borderBottom: "1px solid var(--border)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/icon-192.png" width={28} height={28} style={{ borderRadius: 6 }} alt="" />
+            <strong style={{ fontSize: 14 }}>Tools</strong>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)} aria-label="Close sidebar"
+            style={{ background: "transparent", border: 0, fontSize: 18, cursor: "pointer", color: "var(--text-muted)" }}
+          >✕</button>
+        </div>
+        <nav style={{ padding: 10, display: "grid", gap: 6, overflowY: "auto" }}>
+          {[
+            { label: "Sample", icon: <Sparkles size={15} />, run: () => { loadSample(); setSidebarOpen(false); } },
+            { label: "Templates", icon: <LayoutTemplate size={15} />, run: () => { setPanel("templates"); setSidebarOpen(false); } },
+            { label: "Beautify", icon: <Wand2 size={15} />, run: () => { beautifyAll(); setSidebarOpen(false); } },
+            { label: "Minify", icon: <Minimize2 size={15} />, run: () => { minifyAll(); setSidebarOpen(false); } },
+            { label: `Validate${validationTotal ? ` (${validationTotal})` : ""}`, icon: <ShieldCheck size={15} />, run: () => { setPanel("validate"); setSidebarOpen(false); } },
+            { label: "Find & Replace", icon: <Search size={15} />, run: () => { setPanel("find"); setSidebarOpen(false); } },
+            { label: "Import HTML", icon: <FileDown size={15} />, run: () => { fileRef.current?.click(); setSidebarOpen(false); } },
+            { label: "Export ZIP", icon: <FileArchive size={15} />, run: () => { downloadZip(); setSidebarOpen(false); } },
+            { label: "Save Project", icon: <Save size={15} />, run: () => { saveProject(); setSidebarOpen(false); } },
+            { label: `Recent${recent.length ? ` (${recent.length})` : ""}`, icon: <History size={15} />, run: () => { setPanel("recent"); setSidebarOpen(false); } },
+            { label: "Copy Combined", icon: <Copy size={15} />, run: () => { copyCombined(); setSidebarOpen(false); } },
+            { label: "Copy All Parts", icon: <Copy size={15} />, run: () => { copyAllParts(); setSidebarOpen(false); } },
+          ].map((it) => (
+            <button key={it.label} onClick={it.run} style={sidebarItemBtn}>
+              <span style={{ display: "inline-flex", width: 22, justifyContent: "center" }}>{it.icon}</span>
+              <span>{it.label}</span>
+            </button>
+          ))}
+        </nav>
+        <input
+          ref={fileRef} type="file" accept=".html,.htm,text/html"
+          style={{ display: "none" }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); e.target.value = ""; }}
+        />
+      </aside>
 
       {dragOver && (
         <div style={{
@@ -304,29 +368,10 @@ function AppPage() {
       )}
 
       <div style={{ padding: 12, paddingBottom: 130, maxWidth: 960, margin: "0 auto" }}>
-        {/* Toolbar */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-          <ToolbarButton onClick={loadSample} icon={<Sparkles size={14} />} label="Sample" />
-          <ToolbarButton onClick={() => setPanel(panel === "templates" ? null : "templates")} icon={<LayoutTemplate size={14} />} label="Templates" />
-          <ToolbarButton onClick={beautifyAll} icon={<Wand2 size={14} />} label="Beautify" />
-          <ToolbarButton onClick={minifyAll} icon={<Minimize2 size={14} />} label="Minify" />
-          <ToolbarButton
-            onClick={() => setPanel(panel === "validate" ? null : "validate")}
-            icon={<ShieldCheck size={14} />}
-            label={`Validate${validationTotal ? ` (${validationTotal})` : ""}`}
-            tone={hasErrors ? "danger" : validationTotal ? "warn" : undefined}
-          />
-          <ToolbarButton onClick={() => setPanel(panel === "find" ? null : "find")} icon={<Search size={14} />} label="Find" />
-          <ToolbarButton onClick={() => fileRef.current?.click()} icon={<FileDown size={14} />} label="Import" />
-          <ToolbarButton onClick={downloadZip} icon={<FileArchive size={14} />} label="Export ZIP" />
-          <ToolbarButton onClick={saveProject} icon={<Save size={14} />} label="Save" />
-          <ToolbarButton onClick={() => setPanel(panel === "recent" ? null : "recent")} icon={<History size={14} />} label={`Recent${recent.length ? ` (${recent.length})` : ""}`} />
-          <input
-            ref={fileRef} type="file" accept=".html,.htm,text/html"
-            style={{ display: "none" }}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); e.target.value = ""; }}
-          />
-        </div>
+        <p style={{ fontSize: 11, color: "var(--text-faint)", margin: "0 0 10px", textAlign: "center" }}>
+          Tap the <strong>CCnCS logo</strong> in the header to open all tools.
+        </p>
+
 
         {/* Panels */}
         {panel === "find" && (
