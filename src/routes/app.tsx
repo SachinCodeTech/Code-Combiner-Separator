@@ -39,7 +39,8 @@ export const Route = createFileRoute("/app")({
   component: AppPage,
 });
 
-type Panel = null | "find" | "templates" | "recent" | "validate";
+type Panel = null | "find" | "templates" | "recent" | "validate" | "convert";
+type ConvertMode = "json" | "xml" | "yaml" | "markdown";
 
 function AppPage() {
   const [combined, setCombined] = useState("");
