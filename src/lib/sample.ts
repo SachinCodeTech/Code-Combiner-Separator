@@ -1,6 +1,16 @@
-export const APP_VERSION = "1.3.0";
+export const APP_VERSION = "1.4.0";
 
 export const VERSION_HISTORY: { version: string; date: string; notes: string[] }[] = [
+  {
+    version: "1.4.0",
+    date: "2026-06-14",
+    notes: [
+      "Converters: JSON / XML / YAML / Markdown",
+      "JSON ↔ YAML conversion",
+      "Markdown → HTML preview",
+      "Format and minify for each converter",
+    ],
+  },
   {
     version: "1.3.0",
     date: "2026-06-13",
