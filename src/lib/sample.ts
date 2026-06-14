@@ -1,6 +1,18 @@
-export const APP_VERSION = "1.4.0";
+export const APP_VERSION = "2.0.0";
 
 export const VERSION_HISTORY: { version: string; date: string; notes: string[] }[] = [
+  {
+    version: "2.0.0",
+    date: "2026-06-14",
+    notes: [
+      "CCnCS Studio: framework auto-detection (React / TypeScript / Vue)",
+      "Detection badges: HTML, CSS, JS, React, TS, Vue",
+      "Advanced Validation panel with quality score + line numbers",
+      "Grouped tools sidebar: Editing / File / Utilities / Clipboard",
+      "Dashboard template added",
+      "Future-ready modular architecture",
+    ],
+  },
   {
     version: "1.4.0",
     date: "2026-06-14",
