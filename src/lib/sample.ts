@@ -1,18 +1,6 @@
-export const APP_VERSION = "2.0.0";
+export const APP_VERSION = "1.4.0";
 
 export const VERSION_HISTORY: { version: string; date: string; notes: string[] }[] = [
-  {
-    version: "2.0.0",
-    date: "2026-06-14",
-    notes: [
-      "CCnCS Studio: framework auto-detection (React / TypeScript / Vue)",
-      "Detection badges: HTML, CSS, JS, React, TS, Vue",
-      "Advanced Validation panel with quality score + line numbers",
-      "Grouped tools sidebar: Editing / File / Utilities / Clipboard",
-      "Dashboard template added",
-      "Future-ready modular architecture",
-    ],
-  },
   {
     version: "1.4.0",
     date: "2026-06-14",
@@ -149,34 +137,6 @@ h1{font-size:36px;margin:0 0 8px}
 </body></html>`,
   },
   {
-    id: "dashboard",
-    name: "Dashboard",
-    html: `<!DOCTYPE html>
-<html><head><style>
-body{margin:0;font-family:system-ui;background:#0f172a;color:#e2e8f0;display:grid;grid-template-columns:220px 1fr;min-height:100vh}
-aside{background:#1e293b;padding:20px}
-aside h2{margin:0 0 18px;font-size:16px;color:#fff}
-aside a{display:block;padding:8px 10px;color:#cbd5e1;border-radius:6px;text-decoration:none;margin-bottom:4px}
-aside a:hover{background:#334155;color:#fff}
-main{padding:24px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:16px}
-.kpi{background:#1e293b;padding:16px;border-radius:10px}
-.kpi b{font-size:22px;display:block;color:#fff}
-.kpi span{font-size:12px;color:#94a3b8}
-</style></head><body>
-<aside><h2>📊 Admin</h2>
-<a href="#">Overview</a><a href="#">Users</a><a href="#">Orders</a><a href="#">Settings</a></aside>
-<main><h1 style="margin:0">Dashboard</h1>
-<div class="grid">
-<div class="kpi"><b>1,284</b><span>Users</span></div>
-<div class="kpi"><b>$24.8k</b><span>Revenue</span></div>
-<div class="kpi"><b>312</b><span>Orders</span></div>
-<div class="kpi"><b>98.4%</b><span>Uptime</span></div>
-</div></main>
-<script>console.log('Dashboard ready');</script>
-</body></html>`,
-  },
-  {
     id: "login",
     name: "Login Page",
     html: `<!DOCTYPE html>
@@ -244,46 +204,14 @@ export type DetectResult = {
   html: boolean;
   css: boolean;
   js: boolean;
-  react: boolean;
-  ts: boolean;
-  vue: boolean;
 };
 
 export function detectParts(input: string): DetectResult {
-  const hasReact =
-    /\b(React\.(createElement|useState|useEffect|Component))\b/.test(input) ||
-    /\bfrom\s+['"]react['"]/.test(input) ||
-    /type=["']text\/babel["']/i.test(input) ||
-    /\bReactDOM\b/.test(input);
-  const hasTS =
-    /\binterface\s+[A-Z]\w*/.test(input) ||
-    /:\s*(string|number|boolean|any|unknown|void)\b/.test(input) ||
-    /type=["']text\/typescript["']/i.test(input);
-  const hasVue =
-    /\bVue\.(createApp|component)\b/.test(input) ||
-    /\bcreateApp\s*\(/.test(input) ||
-    /<template[\s>]/i.test(input) ||
-    /\bv-(if|for|bind|on|model)\b/.test(input);
   return {
     html: /<body[^>]*>[\s\S]*?<\/body>/i.test(input) || /<[a-z][\s\S]*?>/i.test(input),
     css: /<style[^>]*>[\s\S]*?<\/style>/i.test(input),
     js: /<script[^>]*>[\s\S]*?<\/script>/i.test(input),
-    react: hasReact,
-    ts: hasTS,
-    vue: hasVue,
   };
-}
-
-export function qualityScore(
-  htmlIssues: number,
-  cssIssues: number,
-  jsIssues: number,
-  jsErrors: number,
-): number {
-  let score = 100;
-  score -= jsErrors * 20;
-  score -= (htmlIssues + cssIssues + jsIssues) * 4;
-  return Math.max(0, Math.min(100, score));
 }
 
 export function countLines(s: string) {
