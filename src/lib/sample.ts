@@ -244,14 +244,46 @@ export type DetectResult = {
   html: boolean;
   css: boolean;
   js: boolean;
+  react: boolean;
+  ts: boolean;
+  vue: boolean;
 };
 
 export function detectParts(input: string): DetectResult {
+  const hasReact =
+    /\b(React\.(createElement|useState|useEffect|Component))\b/.test(input) ||
+    /\bfrom\s+['"]react['"]/.test(input) ||
+    /type=["']text\/babel["']/i.test(input) ||
+    /\bReactDOM\b/.test(input);
+  const hasTS =
+    /\binterface\s+[A-Z]\w*/.test(input) ||
+    /:\s*(string|number|boolean|any|unknown|void)\b/.test(input) ||
+    /type=["']text\/typescript["']/i.test(input);
+  const hasVue =
+    /\bVue\.(createApp|component)\b/.test(input) ||
+    /\bcreateApp\s*\(/.test(input) ||
+    /<template[\s>]/i.test(input) ||
+    /\bv-(if|for|bind|on|model)\b/.test(input);
   return {
     html: /<body[^>]*>[\s\S]*?<\/body>/i.test(input) || /<[a-z][\s\S]*?>/i.test(input),
     css: /<style[^>]*>[\s\S]*?<\/style>/i.test(input),
     js: /<script[^>]*>[\s\S]*?<\/script>/i.test(input),
+    react: hasReact,
+    ts: hasTS,
+    vue: hasVue,
   };
+}
+
+export function qualityScore(
+  htmlIssues: number,
+  cssIssues: number,
+  jsIssues: number,
+  jsErrors: number,
+): number {
+  let score = 100;
+  score -= jsErrors * 20;
+  score -= (htmlIssues + cssIssues + jsIssues) * 4;
+  return Math.max(0, Math.min(100, score));
 }
 
 export function countLines(s: string) {
