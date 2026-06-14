@@ -56,6 +56,10 @@ function AppPage() {
   const [matchCase, setMatchCase] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [minifyStats, setMinifyStats] = useState<{ before: number; after: number } | null>(null);
+  const [convertMode, setConvertMode] = useState<ConvertMode>("json");
+  const [convertIn, setConvertIn] = useState("");
+  const [convertOut, setConvertOut] = useState("");
+  const [convertErr, setConvertErr] = useState<string | null>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
