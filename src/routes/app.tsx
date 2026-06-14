@@ -18,7 +18,7 @@ import { AppFooter } from "@/components/AppFooter";
 import { BottomNav } from "@/components/BottomNav";
 import { CodeEditor } from "@/components/CodeEditor";
 import {
-  SAMPLE_HTML, TEMPLATES, detectParts, countLines, byteSize, formatSize,
+  SAMPLE_HTML, TEMPLATES, detectParts, countLines, byteSize, formatSize, qualityScore,
   type DetectResult,
 } from "@/lib/sample";
 import { minifyHTML, minifyCSS, minifyJS } from "@/lib/minify";
