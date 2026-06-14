@@ -149,6 +149,34 @@ h1{font-size:36px;margin:0 0 8px}
 </body></html>`,
   },
   {
+    id: "dashboard",
+    name: "Dashboard",
+    html: `<!DOCTYPE html>
+<html><head><style>
+body{margin:0;font-family:system-ui;background:#0f172a;color:#e2e8f0;display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+aside{background:#1e293b;padding:20px}
+aside h2{margin:0 0 18px;font-size:16px;color:#fff}
+aside a{display:block;padding:8px 10px;color:#cbd5e1;border-radius:6px;text-decoration:none;margin-bottom:4px}
+aside a:hover{background:#334155;color:#fff}
+main{padding:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:16px}
+.kpi{background:#1e293b;padding:16px;border-radius:10px}
+.kpi b{font-size:22px;display:block;color:#fff}
+.kpi span{font-size:12px;color:#94a3b8}
+</style></head><body>
+<aside><h2>📊 Admin</h2>
+<a href="#">Overview</a><a href="#">Users</a><a href="#">Orders</a><a href="#">Settings</a></aside>
+<main><h1 style="margin:0">Dashboard</h1>
+<div class="grid">
+<div class="kpi"><b>1,284</b><span>Users</span></div>
+<div class="kpi"><b>$24.8k</b><span>Revenue</span></div>
+<div class="kpi"><b>312</b><span>Orders</span></div>
+<div class="kpi"><b>98.4%</b><span>Uptime</span></div>
+</div></main>
+<script>console.log('Dashboard ready');</script>
+</body></html>`,
+  },
+  {
     id: "login",
     name: "Login Page",
     html: `<!DOCTYPE html>
