@@ -47,7 +47,7 @@ function AppPage() {
   const [htmlCode, setHtmlCode] = useState("");
   const [cssCode, setCssCode] = useState("");
   const [jsCode, setJsCode] = useState("");
-  const [detected, setDetected] = useState<DetectResult>({ html: false, css: false, js: false });
+  const [detected, setDetected] = useState<DetectResult>({ html: false, css: false, js: false, react: false, ts: false, vue: false });
   const [dragOver, setDragOver] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
   const [recent, setRecent] = useState<RecentProject[]>([]);
