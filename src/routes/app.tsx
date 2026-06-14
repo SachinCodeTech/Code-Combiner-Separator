@@ -6,8 +6,12 @@ import { html_beautify, css_beautify, js_beautify } from "js-beautify";
 import {
   Play, Download, Share2, Trash2, Copy, Sparkles, Wand2,
   FileArchive, FileDown, Scissors, Minimize2, ShieldCheck, Search,
-  LayoutTemplate, History, Save,
+  LayoutTemplate, History, Save, FileJson,
 } from "lucide-react";
+import {
+  formatJSON, minifyJSON, formatXML, minifyXML,
+  yamlToJSON, jsonToYAML, markdownToHTML,
+} from "@/lib/convert";
 
 import { AppHeader } from "@/components/AppHeader";
 import { AppFooter } from "@/components/AppFooter";
