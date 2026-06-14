@@ -18,7 +18,7 @@ import { AppFooter } from "@/components/AppFooter";
 import { BottomNav } from "@/components/BottomNav";
 import { CodeEditor } from "@/components/CodeEditor";
 import {
-  SAMPLE_HTML, TEMPLATES, detectParts, countLines, byteSize, formatSize,
+  SAMPLE_HTML, TEMPLATES, detectParts, countLines, byteSize, formatSize, qualityScore,
   type DetectResult,
 } from "@/lib/sample";
 import { minifyHTML, minifyCSS, minifyJS } from "@/lib/minify";
@@ -47,7 +47,7 @@ function AppPage() {
   const [htmlCode, setHtmlCode] = useState("");
   const [cssCode, setCssCode] = useState("");
   const [jsCode, setJsCode] = useState("");
-  const [detected, setDetected] = useState<DetectResult>({ html: false, css: false, js: false });
+  const [detected, setDetected] = useState<DetectResult>({ html: false, css: false, js: false, react: false, ts: false, vue: false });
   const [dragOver, setDragOver] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
   const [recent, setRecent] = useState<RecentProject[]>([]);
@@ -336,26 +336,43 @@ function AppPage() {
             style={{ background: "transparent", border: 0, fontSize: 18, cursor: "pointer", color: "var(--text-muted)" }}
           >✕</button>
         </div>
-        <nav style={{ padding: 10, display: "grid", gap: 6, overflowY: "auto" }}>
-          {[
-            { label: "Sample", icon: <Sparkles size={15} />, run: () => { loadSample(); setSidebarOpen(false); } },
-            { label: "Templates", icon: <LayoutTemplate size={15} />, run: () => { setPanel("templates"); setSidebarOpen(false); } },
-            { label: "Beautify", icon: <Wand2 size={15} />, run: () => { beautifyAll(); setSidebarOpen(false); } },
-            { label: "Minify", icon: <Minimize2 size={15} />, run: () => { minifyAll(); setSidebarOpen(false); } },
-            { label: `Validate${validationTotal ? ` (${validationTotal})` : ""}`, icon: <ShieldCheck size={15} />, run: () => { setPanel("validate"); setSidebarOpen(false); } },
-            { label: "Find & Replace", icon: <Search size={15} />, run: () => { setPanel("find"); setSidebarOpen(false); } },
-            { label: "Import HTML", icon: <FileDown size={15} />, run: () => { fileRef.current?.click(); setSidebarOpen(false); } },
-            { label: "Export ZIP", icon: <FileArchive size={15} />, run: () => { downloadZip(); setSidebarOpen(false); } },
-            { label: "Save Project", icon: <Save size={15} />, run: () => { saveProject(); setSidebarOpen(false); } },
-            { label: `Recent${recent.length ? ` (${recent.length})` : ""}`, icon: <History size={15} />, run: () => { setPanel("recent"); setSidebarOpen(false); } },
-            { label: "Converters", icon: <FileJson size={15} />, run: () => { setPanel("convert"); setSidebarOpen(false); } },
-            { label: "Copy Combined", icon: <Copy size={15} />, run: () => { copyCombined(); setSidebarOpen(false); } },
-            { label: "Copy All Parts", icon: <Copy size={15} />, run: () => { copyAllParts(); setSidebarOpen(false); } },
-          ].map((it) => (
-            <button key={it.label} onClick={it.run} style={sidebarItemBtn}>
-              <span style={{ display: "inline-flex", width: 22, justifyContent: "center" }}>{it.icon}</span>
-              <span>{it.label}</span>
-            </button>
+        <nav style={{ padding: 10, display: "grid", gap: 10, overflowY: "auto" }}>
+          {([
+            { section: "Editing", items: [
+              { label: "Beautify", icon: <Wand2 size={15} />, run: beautifyAll },
+              { label: "Minify", icon: <Minimize2 size={15} />, run: minifyAll },
+              { label: `Validate${validationTotal ? ` (${validationTotal})` : ""}`, icon: <ShieldCheck size={15} />, run: () => setPanel("validate") },
+              { label: "Find & Replace", icon: <Search size={15} />, run: () => setPanel("find") },
+            ]},
+            { section: "File", items: [
+              { label: "Import HTML", icon: <FileDown size={15} />, run: () => fileRef.current?.click() },
+              { label: "Save Project", icon: <Save size={15} />, run: saveProject },
+              { label: "Export ZIP", icon: <FileArchive size={15} />, run: downloadZip },
+              { label: `Recent${recent.length ? ` (${recent.length})` : ""}`, icon: <History size={15} />, run: () => setPanel("recent") },
+            ]},
+            { section: "Utilities", items: [
+              { label: "Templates", icon: <LayoutTemplate size={15} />, run: () => setPanel("templates") },
+              { label: "Converters", icon: <FileJson size={15} />, run: () => setPanel("convert") },
+              { label: "Sample Project", icon: <Sparkles size={15} />, run: loadSample },
+            ]},
+            { section: "Clipboard", items: [
+              { label: "Copy Combined", icon: <Copy size={15} />, run: copyCombined },
+              { label: "Copy All Parts", icon: <Copy size={15} />, run: copyAllParts },
+            ]},
+          ]).map((group) => (
+            <div key={group.section} style={{ display: "grid", gap: 6 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: 0.8,
+                color: "var(--text-faint)", textTransform: "uppercase",
+                padding: "2px 4px",
+              }}>{group.section}</div>
+              {group.items.map((it) => (
+                <button key={it.label} onClick={() => { it.run(); setSidebarOpen(false); }} style={sidebarItemBtn}>
+                  <span style={{ display: "inline-flex", width: 22, justifyContent: "center" }}>{it.icon}</span>
+                  <span>{it.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <input
@@ -447,7 +464,28 @@ function AppPage() {
         )}
 
         {panel === "validate" && (
-          <PanelBox title="Validation" onClose={() => setPanel(null)}>
+          <PanelBox title="Validation Results" onClose={() => setPanel(null)}>
+            {(() => {
+              const jsErrs = validation.js.filter((i) => i.level === "error").length;
+              const score = qualityScore(validation.html.length, validation.css.length, validation.js.length, jsErrs);
+              const color = score >= 90 ? "#16a34a" : score >= 70 ? "#f59e0b" : "var(--danger)";
+              const hasAny = !!(htmlCode || cssCode || jsCode || combined);
+              return hasAny ? (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
+                  padding: "8px 10px", background: "var(--surface-2)",
+                  border: "1px solid var(--border)", borderRadius: 8,
+                }}>
+                  <div style={{
+                    fontSize: 22, fontWeight: 800, color, minWidth: 56, textAlign: "center",
+                  }}>{score}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                    <strong style={{ color: "var(--text)" }}>Quality Score</strong><br />
+                    {validationTotal} issue{validationTotal === 1 ? "" : "s"} · {jsErrs} error{jsErrs === 1 ? "" : "s"}
+                  </div>
+                </div>
+              ) : null;
+            })()}
             <ValidationSummary label="HTML" items={validation.html} hasCode={!!(htmlCode || combined)} />
             <ValidationSummary label="CSS" items={validation.css} hasCode={!!cssCode} />
             <ValidationSummary label="JavaScript" items={validation.js} hasCode={!!jsCode} />
@@ -786,13 +824,16 @@ function ValidationList({ label, items }: { label: string; items: ValidationIssu
 }
 
 function DetectChips({ d }: { d: DetectResult }) {
-  const items: Array<[string, boolean]> = [["HTML", d.html], ["CSS", d.css], ["JS", d.js]];
+  const items: Array<[string, boolean]> = [
+    ["HTML", d.html], ["CSS", d.css], ["JS", d.js],
+    ["React", d.react], ["TS", d.ts], ["Vue", d.vue],
+  ];
   return (
-    <div style={{ display: "flex", gap: 4 }}>
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
       {items.map(([k, on]) => (
         <span key={k} style={{
           fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999,
-          background: on ? "rgba(34,197,94,0.15)" : "rgba(148,163,184,0.15)",
+          background: on ? "rgba(34,197,94,0.15)" : "rgba(148,163,184,0.10)",
           color: on ? "#16a34a" : "var(--text-faint)",
           border: `1px solid ${on ? "rgba(34,197,94,0.3)" : "var(--border)"}`,
         }}>
