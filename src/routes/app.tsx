@@ -786,13 +786,16 @@ function ValidationList({ label, items }: { label: string; items: ValidationIssu
 }
 
 function DetectChips({ d }: { d: DetectResult }) {
-  const items: Array<[string, boolean]> = [["HTML", d.html], ["CSS", d.css], ["JS", d.js]];
+  const items: Array<[string, boolean]> = [
+    ["HTML", d.html], ["CSS", d.css], ["JS", d.js],
+    ["React", d.react], ["TS", d.ts], ["Vue", d.vue],
+  ];
   return (
-    <div style={{ display: "flex", gap: 4 }}>
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
       {items.map(([k, on]) => (
         <span key={k} style={{
           fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999,
-          background: on ? "rgba(34,197,94,0.15)" : "rgba(148,163,184,0.15)",
+          background: on ? "rgba(34,197,94,0.15)" : "rgba(148,163,184,0.10)",
           color: on ? "#16a34a" : "var(--text-faint)",
           border: `1px solid ${on ? "rgba(34,197,94,0.3)" : "var(--border)"}`,
         }}>
