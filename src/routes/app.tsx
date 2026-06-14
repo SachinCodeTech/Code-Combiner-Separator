@@ -459,6 +459,114 @@ function AppPage() {
           </PanelBox>
         )}
 
+        {panel === "convert" && (
+          <PanelBox title="Converters" onClose={() => setPanel(null)}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+              {(["json", "xml", "yaml", "markdown"] as ConvertMode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { setConvertMode(m); setConvertOut(""); setConvertErr(null); }}
+                  style={{
+                    ...tileBtn,
+                    padding: "6px 10px",
+                    background: convertMode === m ? "var(--accent)" : "var(--surface-2)",
+                    color: convertMode === m ? "white" : "var(--text)",
+                    borderColor: convertMode === m ? "var(--accent)" : "var(--border)",
+                  }}
+                >
+                  {m.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              <textarea
+                value={convertIn}
+                onChange={(e) => setConvertIn(e.target.value)}
+                placeholder={`Paste ${convertMode.toUpperCase()} here…`}
+                spellCheck={false}
+                style={{
+                  width: "100%", minHeight: 120, padding: 10, boxSizing: "border-box",
+                  border: "1px solid var(--border)", borderRadius: 8,
+                  background: "var(--code-bg)", color: "var(--text)",
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12,
+                  resize: "vertical", outline: "none",
+                }}
+              />
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <button
+                  style={primaryBtn}
+                  onClick={() => {
+                    const r =
+                      convertMode === "json" ? formatJSON(convertIn) :
+                      convertMode === "xml" ? formatXML(convertIn) :
+                      convertMode === "yaml" ? yamlToJSON(convertIn) :
+                      markdownToHTML(convertIn);
+                    if (r.ok) { setConvertOut(r.out); setConvertErr(null); toast.success("Formatted"); }
+                    else { setConvertErr(r.error); toast.error(r.error); }
+                  }}
+                >
+                  {convertMode === "yaml" ? "YAML → JSON" :
+                   convertMode === "markdown" ? "MD → HTML" : "Beautify"}
+                </button>
+                {(convertMode === "json" || convertMode === "xml") && (
+                  <button
+                    style={{ ...primaryBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}
+                    onClick={() => {
+                      const r = convertMode === "json" ? minifyJSON(convertIn) : minifyXML(convertIn);
+                      if (r.ok) { setConvertOut(r.out); setConvertErr(null); toast.success("Minified"); }
+                      else { setConvertErr(r.error); toast.error(r.error); }
+                    }}
+                  >Minify</button>
+                )}
+                {convertMode === "yaml" && (
+                  <button
+                    style={{ ...primaryBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}
+                    onClick={() => {
+                      const r = jsonToYAML(convertIn);
+                      if (r.ok) { setConvertOut(r.out); setConvertErr(null); toast.success("Converted"); }
+                      else { setConvertErr(r.error); toast.error(r.error); }
+                    }}
+                  >JSON → YAML</button>
+                )}
+                {convertOut && (
+                  <button
+                    style={{ ...primaryBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}
+                    onClick={async () => {
+                      try { await navigator.clipboard.writeText(convertOut); toast.success("Copied"); }
+                      catch { toast.error("Clipboard not available"); }
+                    }}
+                  >Copy Output</button>
+                )}
+              </div>
+              {convertErr && (
+                <div style={{ fontSize: 12, color: "var(--danger)" }}>⚠ {convertErr}</div>
+              )}
+              {convertOut && (
+                <textarea
+                  value={convertOut}
+                  readOnly
+                  spellCheck={false}
+                  style={{
+                    width: "100%", minHeight: 140, padding: 10, boxSizing: "border-box",
+                    border: "1px solid var(--border)", borderRadius: 8,
+                    background: "var(--code-bg)", color: "var(--text)",
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12,
+                    resize: "vertical", outline: "none",
+                  }}
+                />
+              )}
+              {convertMode === "markdown" && convertOut && (
+                <div style={{
+                  background: "white", color: "#111", padding: 12, borderRadius: 8,
+                  border: "1px solid var(--border)", maxHeight: 260, overflow: "auto",
+                }} dangerouslySetInnerHTML={{ __html: convertOut }} />
+              )}
+            </div>
+          </PanelBox>
+        )}
+
+
+
         {minifyStats && (
           <div style={{
             background: "var(--surface)", border: "1px solid var(--border)",
