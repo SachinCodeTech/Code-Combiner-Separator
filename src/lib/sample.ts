@@ -215,17 +215,32 @@ export const SAMPLE_HTML = `<!DOCTYPE html>
   </body>
 </html>`;
 
+export type Framework = "react" | "vue" | "typescript" | null;
+
 export type DetectResult = {
   html: boolean;
   css: boolean;
   js: boolean;
+  framework: Framework;
 };
+
+export function detectFramework(input: string): Framework {
+  if (!input) return null;
+  if (/<template[\s>]/i.test(input) && /<script[^>]*>/i.test(input)) return "vue";
+  if (/Vue\.createApp|defineComponent|\bv-(if|for|bind|on|model)\b/.test(input)) return "vue";
+  if (/type="text\/typescript"/i.test(input)) return "typescript";
+  if (/interface\s+[A-Z]\w*\s*\{|:\s*(string|number|boolean)\s*[=;,)]/.test(input)) return "typescript";
+  if (/type="text\/babel"/i.test(input)) return "react";
+  if (/\bReact\.|ReactDOM\.|useState\(|useEffect\(|<[A-Z]\w*\s*[/>]/.test(input)) return "react";
+  return null;
+}
 
 export function detectParts(input: string): DetectResult {
   return {
     html: /<body[^>]*>[\s\S]*?<\/body>/i.test(input) || /<[a-z][\s\S]*?>/i.test(input),
     css: /<style[^>]*>[\s\S]*?<\/style>/i.test(input),
     js: /<script[^>]*>[\s\S]*?<\/script>/i.test(input),
+    framework: detectFramework(input),
   };
 }
 
