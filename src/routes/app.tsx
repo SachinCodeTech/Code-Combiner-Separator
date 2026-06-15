@@ -22,7 +22,7 @@ import {
   type DetectResult,
 } from "@/lib/sample";
 import { minifyHTML, minifyCSS, minifyJS } from "@/lib/minify";
-import { validateHTML, validateCSS, validateJS, type ValidationIssue } from "@/lib/validate";
+import { validateHTML, validateCSS, validateJS, qualityScore, suggestionFor, type ValidationIssue } from "@/lib/validate";
 import { listRecent, saveRecent, deleteRecent, type RecentProject } from "@/lib/recent";
 
 export const Route = createFileRoute("/app")({
@@ -47,7 +47,7 @@ function AppPage() {
   const [htmlCode, setHtmlCode] = useState("");
   const [cssCode, setCssCode] = useState("");
   const [jsCode, setJsCode] = useState("");
-  const [detected, setDetected] = useState<DetectResult>({ html: false, css: false, js: false });
+  const [detected, setDetected] = useState<DetectResult>({ html: false, css: false, js: false, framework: null });
   const [dragOver, setDragOver] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
   const [recent, setRecent] = useState<RecentProject[]>([]);
@@ -336,26 +336,42 @@ function AppPage() {
             style={{ background: "transparent", border: 0, fontSize: 18, cursor: "pointer", color: "var(--text-muted)" }}
           >✕</button>
         </div>
-        <nav style={{ padding: 10, display: "grid", gap: 6, overflowY: "auto" }}>
-          {[
-            { label: "Sample", icon: <Sparkles size={15} />, run: () => { loadSample(); setSidebarOpen(false); } },
-            { label: "Templates", icon: <LayoutTemplate size={15} />, run: () => { setPanel("templates"); setSidebarOpen(false); } },
-            { label: "Beautify", icon: <Wand2 size={15} />, run: () => { beautifyAll(); setSidebarOpen(false); } },
-            { label: "Minify", icon: <Minimize2 size={15} />, run: () => { minifyAll(); setSidebarOpen(false); } },
-            { label: `Validate${validationTotal ? ` (${validationTotal})` : ""}`, icon: <ShieldCheck size={15} />, run: () => { setPanel("validate"); setSidebarOpen(false); } },
-            { label: "Find & Replace", icon: <Search size={15} />, run: () => { setPanel("find"); setSidebarOpen(false); } },
-            { label: "Import HTML", icon: <FileDown size={15} />, run: () => { fileRef.current?.click(); setSidebarOpen(false); } },
-            { label: "Export ZIP", icon: <FileArchive size={15} />, run: () => { downloadZip(); setSidebarOpen(false); } },
-            { label: "Save Project", icon: <Save size={15} />, run: () => { saveProject(); setSidebarOpen(false); } },
-            { label: `Recent${recent.length ? ` (${recent.length})` : ""}`, icon: <History size={15} />, run: () => { setPanel("recent"); setSidebarOpen(false); } },
-            { label: "Converters", icon: <FileJson size={15} />, run: () => { setPanel("convert"); setSidebarOpen(false); } },
-            { label: "Copy Combined", icon: <Copy size={15} />, run: () => { copyCombined(); setSidebarOpen(false); } },
-            { label: "Copy All Parts", icon: <Copy size={15} />, run: () => { copyAllParts(); setSidebarOpen(false); } },
-          ].map((it) => (
-            <button key={it.label} onClick={it.run} style={sidebarItemBtn}>
-              <span style={{ display: "inline-flex", width: 22, justifyContent: "center" }}>{it.icon}</span>
-              <span>{it.label}</span>
-            </button>
+        <nav style={{ padding: 10, display: "grid", gap: 4, overflowY: "auto" }}>
+          {([
+            { section: "Editing", items: [
+              { label: "Beautify", icon: <Wand2 size={15} />, run: () => beautifyAll() },
+              { label: "Minify", icon: <Minimize2 size={15} />, run: () => minifyAll() },
+              { label: `Validate${validationTotal ? ` (${validationTotal})` : ""}`, icon: <ShieldCheck size={15} />, run: () => setPanel("validate") },
+              { label: "Find & Replace", icon: <Search size={15} />, run: () => setPanel("find") },
+            ]},
+            { section: "File", items: [
+              { label: "Import HTML", icon: <FileDown size={15} />, run: () => fileRef.current?.click() },
+              { label: "Save Project", icon: <Save size={15} />, run: () => saveProject() },
+              { label: "Export ZIP", icon: <FileArchive size={15} />, run: () => downloadZip() },
+              { label: `Recent${recent.length ? ` (${recent.length})` : ""}`, icon: <History size={15} />, run: () => setPanel("recent") },
+            ]},
+            { section: "Utilities", items: [
+              { label: "Templates", icon: <LayoutTemplate size={15} />, run: () => setPanel("templates") },
+              { label: "Converters", icon: <FileJson size={15} />, run: () => setPanel("convert") },
+              { label: "Sample Project", icon: <Sparkles size={15} />, run: () => loadSample() },
+            ]},
+            { section: "Clipboard", items: [
+              { label: "Copy Combined", icon: <Copy size={15} />, run: () => copyCombined() },
+              { label: "Copy All Parts", icon: <Copy size={15} />, run: () => copyAllParts() },
+            ]},
+          ] as const).map((group) => (
+            <div key={group.section} style={{ marginTop: 6 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 800, textTransform: "uppercase",
+                color: "var(--text-faint)", letterSpacing: 1, padding: "4px 8px",
+              }}>{group.section}</div>
+              {group.items.map((it) => (
+                <button key={it.label} onClick={() => { it.run(); setSidebarOpen(false); }} style={sidebarItemBtn}>
+                  <span style={{ display: "inline-flex", width: 22, justifyContent: "center" }}>{it.icon}</span>
+                  <span>{it.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <input
@@ -447,10 +463,25 @@ function AppPage() {
         )}
 
         {panel === "validate" && (
-          <PanelBox title="Validation" onClose={() => setPanel(null)}>
-            <ValidationSummary label="HTML" items={validation.html} hasCode={!!(htmlCode || combined)} />
-            <ValidationSummary label="CSS" items={validation.css} hasCode={!!cssCode} />
-            <ValidationSummary label="JavaScript" items={validation.js} hasCode={!!jsCode} />
+          <PanelBox title="Validation Results" onClose={() => setPanel(null)}>
+            {(() => {
+              const anyCode = !!(htmlCode || cssCode || jsCode || combined);
+              const score = qualityScore({ html: validation.html, css: validation.css, js: validation.js }, anyCode);
+              const scoreColor = score >= 90 ? "#16a34a" : score >= 70 ? "#f59e0b" : "var(--danger)";
+              return anyCode ? (
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "8px 10px", marginBottom: 10, borderRadius: 8,
+                  background: "var(--surface-2)", border: "1px solid var(--border)",
+                }}>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Quality Score</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: scoreColor }}>{score}/100</span>
+                </div>
+              ) : null;
+            })()}
+            <ValidationDetail label="HTML" items={validation.html} hasCode={!!(htmlCode || combined)} />
+            <ValidationDetail label="CSS" items={validation.css} hasCode={!!cssCode} />
+            <ValidationDetail label="JavaScript" items={validation.js} hasCode={!!jsCode} />
             {validationTotal === 0 && (htmlCode || cssCode || jsCode || combined) && (
               <p style={{ ...statText, margin: "6px 0 0", color: "#16a34a", fontSize: 12 }}>
                 ✓ All checks passed.
@@ -615,7 +646,7 @@ function AppPage() {
               <IconAction onClick={() => downloadPart("index.html", htmlWrapper(htmlCode), "text/html")} icon={<Download size={13} />} label="Save" />
             </>
           }
-          stats={`${countLines(htmlCode)} lines · ${formatSize(byteSize(htmlCode))}`}
+          stats={`${countLines(htmlCode)} lines · ${htmlCode.length} chars · ${formatSize(byteSize(htmlCode))}`}
         >
           <CodeEditor value={htmlCode} onChange={setHtmlCode} language="html" height={150} />
         </Section>
@@ -628,7 +659,7 @@ function AppPage() {
               <IconAction onClick={() => downloadPart("style.css", cssCode, "text/css")} icon={<Download size={13} />} label="Save" />
             </>
           }
-          stats={`${countLines(cssCode)} lines · ${formatSize(byteSize(cssCode))}`}
+          stats={`${countLines(cssCode)} lines · ${cssCode.length} chars · ${formatSize(byteSize(cssCode))}`}
         >
           <CodeEditor value={cssCode} onChange={setCssCode} language="css" height={140} />
         </Section>
@@ -641,7 +672,7 @@ function AppPage() {
               <IconAction onClick={() => downloadPart("script.js", jsCode, "text/javascript")} icon={<Download size={13} />} label="Save" />
             </>
           }
-          stats={`${countLines(jsCode)} lines · ${formatSize(byteSize(jsCode))}`}
+          stats={`${countLines(jsCode)} lines · ${jsCode.length} chars · ${formatSize(byteSize(jsCode))}`}
         >
           <CodeEditor value={jsCode} onChange={setJsCode} language="js" height={140} />
         </Section>
@@ -786,9 +817,12 @@ function ValidationList({ label, items }: { label: string; items: ValidationIssu
 }
 
 function DetectChips({ d }: { d: DetectResult }) {
+  const fwLabel = d.framework === "react" ? "React"
+    : d.framework === "vue" ? "Vue"
+    : d.framework === "typescript" ? "TS" : null;
   const items: Array<[string, boolean]> = [["HTML", d.html], ["CSS", d.css], ["JS", d.js]];
   return (
-    <div style={{ display: "flex", gap: 4 }}>
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
       {items.map(([k, on]) => (
         <span key={k} style={{
           fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999,
@@ -799,6 +833,41 @@ function DetectChips({ d }: { d: DetectResult }) {
           {on ? "✓" : "·"} {k}
         </span>
       ))}
+      {fwLabel && (
+        <span style={{
+          fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999,
+          background: "rgba(99,102,241,0.18)", color: "var(--accent)",
+          border: "1px solid rgba(99,102,241,0.35)",
+        }}>★ {fwLabel}</span>
+      )}
+    </div>
+  );
+}
+
+function ValidationDetail({ label, items, hasCode }: { label: string; items: ValidationIssue[]; hasCode: boolean }) {
+  if (!hasCode) return null;
+  if (items.length === 0) {
+    return (
+      <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, padding: "6px 0" }}>
+        ✓ {label} Valid
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>
+        {label} — {items.length} issue{items.length === 1 ? "" : "s"}
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, display: "grid", gap: 4 }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ color: it.level === "error" ? "var(--danger)" : "var(--warning)" }}>
+            <div><strong>{it.level === "error" ? "Error" : "Warning"}{it.line ? ` · Line ${it.line}` : ""}:</strong> {it.msg}</div>
+            <div style={{ color: "var(--text-faint)", fontSize: 11, marginTop: 2 }}>
+              → {suggestionFor(it)}
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

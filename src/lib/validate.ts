@@ -77,3 +77,23 @@ export function summarize(r: ValidationReport) {
   const errs = [...r.html, ...r.css, ...r.js].filter((i) => i.level === "error").length;
   return { total, errs };
 }
+
+export function suggestionFor(issue: ValidationIssue): string {
+  const m = issue.msg.toLowerCase();
+  if (m.includes("unclosed")) return "Add the matching closing tag.";
+  if (m.includes("mismatch")) return "Check tag nesting order.";
+  if (m.includes("stray")) return "Remove or pair this closing tag.";
+  if (m.includes("brace")) return "Balance your { and } braces.";
+  if (m.includes("unexpected") || m.includes("token")) return "Check for typos near this location.";
+  if (m.includes("not defined")) return "Declare the variable or import it.";
+  return "Review the code around this location.";
+}
+
+export function qualityScore(r: ValidationReport, hasAnyCode: boolean): number {
+  if (!hasAnyCode) return 0;
+  const all = [...r.html, ...r.css, ...r.js];
+  const errors = all.filter((i) => i.level === "error").length;
+  const warns = all.filter((i) => i.level === "warn").length;
+  const score = 100 - errors * 15 - warns * 4;
+  return Math.max(0, Math.min(100, score));
+}

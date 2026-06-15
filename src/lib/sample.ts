@@ -1,6 +1,21 @@
-export const APP_VERSION = "1.4.0";
+export const APP_VERSION = "2.0.0";
+export const APP_NAME = "CCnCS Studio";
 
 export const VERSION_HISTORY: { version: string; date: string; notes: string[] }[] = [
+  {
+    version: "2.0.0",
+    date: "2026-06-15",
+    notes: [
+      "Rebranded as CCnCS Studio",
+      "Framework auto-detection (React JSX, TypeScript, Vue SFC)",
+      "Framework detection badges (HTML/CSS/JS/React/TS/Vue)",
+      "Dedicated Validation Results panel with quality score",
+      "Code intelligence: lines, characters, file size, savings %",
+      "Tools grouped into Editing / File / Utilities / Clipboard sections",
+      "Dashboard template added",
+      "Modular architecture ready for JSON Studio, API Tester, Vox DevBook, AI review",
+    ],
+  },
   {
     version: "1.4.0",
     date: "2026-06-14",
@@ -156,6 +171,35 @@ button{width:100%;padding:10px;background:#6366f1;color:#fff;border:0;border-rad
 </body></html>`,
   },
   {
+    id: "dashboard",
+    name: "Dashboard",
+    html: `<!DOCTYPE html>
+<html><head><style>
+body{margin:0;font-family:system-ui;background:#0f172a;color:#e2e8f0;display:grid;grid-template-columns:200px 1fr;min-height:100vh}
+.side{background:#1e293b;padding:20px}
+.side h2{margin:0 0 16px;font-size:16px;color:#6366f1}
+.side a{display:block;color:#cbd5e1;text-decoration:none;padding:8px;border-radius:6px;margin-bottom:4px}
+.side a:hover{background:#334155}
+.main{padding:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:16px}
+.card{background:#1e293b;padding:18px;border-radius:10px;border:1px solid #334155}
+.card b{display:block;font-size:24px;color:#6366f1;margin-bottom:4px}
+.card span{font-size:12px;color:#94a3b8}
+</style></head><body>
+<aside class="side"><h2>Admin</h2>
+<a>Overview</a><a>Users</a><a>Reports</a><a>Settings</a></aside>
+<main class="main"><h1>Dashboard</h1>
+<div class="grid">
+<div class="card"><b>1,284</b><span>Users</span></div>
+<div class="card"><b>$48k</b><span>Revenue</span></div>
+<div class="card"><b>97%</b><span>Uptime</span></div>
+<div class="card"><b>32</b><span>Active</span></div>
+</div></main>
+<script>console.log('Dashboard loaded');</script>
+</body></html>`,
+  },
+
+  {
     id: "contact",
     name: "Contact Form",
     html: `<!DOCTYPE html>
@@ -200,17 +244,32 @@ export const SAMPLE_HTML = `<!DOCTYPE html>
   </body>
 </html>`;
 
+export type Framework = "react" | "vue" | "typescript" | null;
+
 export type DetectResult = {
   html: boolean;
   css: boolean;
   js: boolean;
+  framework: Framework;
 };
+
+export function detectFramework(input: string): Framework {
+  if (!input) return null;
+  if (/<template[\s>]/i.test(input) && /<script[^>]*>/i.test(input)) return "vue";
+  if (/Vue\.createApp|defineComponent|\bv-(if|for|bind|on|model)\b/.test(input)) return "vue";
+  if (/type="text\/typescript"/i.test(input)) return "typescript";
+  if (/interface\s+[A-Z]\w*\s*\{|:\s*(string|number|boolean)\s*[=;,)]/.test(input)) return "typescript";
+  if (/type="text\/babel"/i.test(input)) return "react";
+  if (/\bReact\.|ReactDOM\.|useState\(|useEffect\(|<[A-Z]\w*\s*[/>]/.test(input)) return "react";
+  return null;
+}
 
 export function detectParts(input: string): DetectResult {
   return {
     html: /<body[^>]*>[\s\S]*?<\/body>/i.test(input) || /<[a-z][\s\S]*?>/i.test(input),
     css: /<style[^>]*>[\s\S]*?<\/style>/i.test(input),
     js: /<script[^>]*>[\s\S]*?<\/script>/i.test(input),
+    framework: detectFramework(input),
   };
 }
 
