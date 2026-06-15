@@ -1,6 +1,21 @@
-export const APP_VERSION = "1.4.0";
+export const APP_VERSION = "2.0.0";
+export const APP_NAME = "CCnCS Studio";
 
 export const VERSION_HISTORY: { version: string; date: string; notes: string[] }[] = [
+  {
+    version: "2.0.0",
+    date: "2026-06-15",
+    notes: [
+      "Rebranded as CCnCS Studio",
+      "Framework auto-detection (React JSX, TypeScript, Vue SFC)",
+      "Framework detection badges (HTML/CSS/JS/React/TS/Vue)",
+      "Dedicated Validation Results panel with quality score",
+      "Code intelligence: lines, characters, file size, savings %",
+      "Tools grouped into Editing / File / Utilities / Clipboard sections",
+      "Dashboard template added",
+      "Modular architecture ready for JSON Studio, API Tester, Vox DevBook, AI review",
+    ],
+  },
   {
     version: "1.4.0",
     date: "2026-06-14",
