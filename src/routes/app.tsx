@@ -463,10 +463,25 @@ function AppPage() {
         )}
 
         {panel === "validate" && (
-          <PanelBox title="Validation" onClose={() => setPanel(null)}>
-            <ValidationSummary label="HTML" items={validation.html} hasCode={!!(htmlCode || combined)} />
-            <ValidationSummary label="CSS" items={validation.css} hasCode={!!cssCode} />
-            <ValidationSummary label="JavaScript" items={validation.js} hasCode={!!jsCode} />
+          <PanelBox title="Validation Results" onClose={() => setPanel(null)}>
+            {(() => {
+              const anyCode = !!(htmlCode || cssCode || jsCode || combined);
+              const score = qualityScore({ html: validation.html, css: validation.css, js: validation.js }, anyCode);
+              const scoreColor = score >= 90 ? "#16a34a" : score >= 70 ? "#f59e0b" : "var(--danger)";
+              return anyCode ? (
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "8px 10px", marginBottom: 10, borderRadius: 8,
+                  background: "var(--surface-2)", border: "1px solid var(--border)",
+                }}>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Quality Score</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: scoreColor }}>{score}/100</span>
+                </div>
+              ) : null;
+            })()}
+            <ValidationDetail label="HTML" items={validation.html} hasCode={!!(htmlCode || combined)} />
+            <ValidationDetail label="CSS" items={validation.css} hasCode={!!cssCode} />
+            <ValidationDetail label="JavaScript" items={validation.js} hasCode={!!jsCode} />
             {validationTotal === 0 && (htmlCode || cssCode || jsCode || combined) && (
               <p style={{ ...statText, margin: "6px 0 0", color: "#16a34a", fontSize: 12 }}>
                 ✓ All checks passed.
