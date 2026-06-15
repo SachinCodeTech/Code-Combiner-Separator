@@ -41,7 +41,7 @@ export function AppHeader({
             whiteSpace: "normal",
           }}
         >
-          Split. Combine. Preview.
+          Studio · Split · Combine · Preview
         </div>
       </div>
     </>
