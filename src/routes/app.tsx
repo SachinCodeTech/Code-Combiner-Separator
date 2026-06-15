@@ -336,26 +336,42 @@ function AppPage() {
             style={{ background: "transparent", border: 0, fontSize: 18, cursor: "pointer", color: "var(--text-muted)" }}
           >✕</button>
         </div>
-        <nav style={{ padding: 10, display: "grid", gap: 6, overflowY: "auto" }}>
-          {[
-            { label: "Sample", icon: <Sparkles size={15} />, run: () => { loadSample(); setSidebarOpen(false); } },
-            { label: "Templates", icon: <LayoutTemplate size={15} />, run: () => { setPanel("templates"); setSidebarOpen(false); } },
-            { label: "Beautify", icon: <Wand2 size={15} />, run: () => { beautifyAll(); setSidebarOpen(false); } },
-            { label: "Minify", icon: <Minimize2 size={15} />, run: () => { minifyAll(); setSidebarOpen(false); } },
-            { label: `Validate${validationTotal ? ` (${validationTotal})` : ""}`, icon: <ShieldCheck size={15} />, run: () => { setPanel("validate"); setSidebarOpen(false); } },
-            { label: "Find & Replace", icon: <Search size={15} />, run: () => { setPanel("find"); setSidebarOpen(false); } },
-            { label: "Import HTML", icon: <FileDown size={15} />, run: () => { fileRef.current?.click(); setSidebarOpen(false); } },
-            { label: "Export ZIP", icon: <FileArchive size={15} />, run: () => { downloadZip(); setSidebarOpen(false); } },
-            { label: "Save Project", icon: <Save size={15} />, run: () => { saveProject(); setSidebarOpen(false); } },
-            { label: `Recent${recent.length ? ` (${recent.length})` : ""}`, icon: <History size={15} />, run: () => { setPanel("recent"); setSidebarOpen(false); } },
-            { label: "Converters", icon: <FileJson size={15} />, run: () => { setPanel("convert"); setSidebarOpen(false); } },
-            { label: "Copy Combined", icon: <Copy size={15} />, run: () => { copyCombined(); setSidebarOpen(false); } },
-            { label: "Copy All Parts", icon: <Copy size={15} />, run: () => { copyAllParts(); setSidebarOpen(false); } },
-          ].map((it) => (
-            <button key={it.label} onClick={it.run} style={sidebarItemBtn}>
-              <span style={{ display: "inline-flex", width: 22, justifyContent: "center" }}>{it.icon}</span>
-              <span>{it.label}</span>
-            </button>
+        <nav style={{ padding: 10, display: "grid", gap: 4, overflowY: "auto" }}>
+          {([
+            { section: "Editing", items: [
+              { label: "Beautify", icon: <Wand2 size={15} />, run: () => beautifyAll() },
+              { label: "Minify", icon: <Minimize2 size={15} />, run: () => minifyAll() },
+              { label: `Validate${validationTotal ? ` (${validationTotal})` : ""}`, icon: <ShieldCheck size={15} />, run: () => setPanel("validate") },
+              { label: "Find & Replace", icon: <Search size={15} />, run: () => setPanel("find") },
+            ]},
+            { section: "File", items: [
+              { label: "Import HTML", icon: <FileDown size={15} />, run: () => fileRef.current?.click() },
+              { label: "Save Project", icon: <Save size={15} />, run: () => saveProject() },
+              { label: "Export ZIP", icon: <FileArchive size={15} />, run: () => downloadZip() },
+              { label: `Recent${recent.length ? ` (${recent.length})` : ""}`, icon: <History size={15} />, run: () => setPanel("recent") },
+            ]},
+            { section: "Utilities", items: [
+              { label: "Templates", icon: <LayoutTemplate size={15} />, run: () => setPanel("templates") },
+              { label: "Converters", icon: <FileJson size={15} />, run: () => setPanel("convert") },
+              { label: "Sample Project", icon: <Sparkles size={15} />, run: () => loadSample() },
+            ]},
+            { section: "Clipboard", items: [
+              { label: "Copy Combined", icon: <Copy size={15} />, run: () => copyCombined() },
+              { label: "Copy All Parts", icon: <Copy size={15} />, run: () => copyAllParts() },
+            ]},
+          ] as const).map((group) => (
+            <div key={group.section} style={{ marginTop: 6 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 800, textTransform: "uppercase",
+                color: "var(--text-faint)", letterSpacing: 1, padding: "4px 8px",
+              }}>{group.section}</div>
+              {group.items.map((it) => (
+                <button key={it.label} onClick={() => { it.run(); setSidebarOpen(false); }} style={sidebarItemBtn}>
+                  <span style={{ display: "inline-flex", width: 22, justifyContent: "center" }}>{it.icon}</span>
+                  <span>{it.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <input
