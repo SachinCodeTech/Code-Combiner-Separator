@@ -646,7 +646,7 @@ function AppPage() {
               <IconAction onClick={() => downloadPart("index.html", htmlWrapper(htmlCode), "text/html")} icon={<Download size={13} />} label="Save" />
             </>
           }
-          stats={`${countLines(htmlCode)} lines · ${formatSize(byteSize(htmlCode))}`}
+          stats={`${countLines(htmlCode)} lines · ${htmlCode.length} chars · ${formatSize(byteSize(htmlCode))}`}
         >
           <CodeEditor value={htmlCode} onChange={setHtmlCode} language="html" height={150} />
         </Section>
@@ -659,7 +659,7 @@ function AppPage() {
               <IconAction onClick={() => downloadPart("style.css", cssCode, "text/css")} icon={<Download size={13} />} label="Save" />
             </>
           }
-          stats={`${countLines(cssCode)} lines · ${formatSize(byteSize(cssCode))}`}
+          stats={`${countLines(cssCode)} lines · ${cssCode.length} chars · ${formatSize(byteSize(cssCode))}`}
         >
           <CodeEditor value={cssCode} onChange={setCssCode} language="css" height={140} />
         </Section>
@@ -672,7 +672,7 @@ function AppPage() {
               <IconAction onClick={() => downloadPart("script.js", jsCode, "text/javascript")} icon={<Download size={13} />} label="Save" />
             </>
           }
-          stats={`${countLines(jsCode)} lines · ${formatSize(byteSize(jsCode))}`}
+          stats={`${countLines(jsCode)} lines · ${jsCode.length} chars · ${formatSize(byteSize(jsCode))}`}
         >
           <CodeEditor value={jsCode} onChange={setJsCode} language="js" height={140} />
         </Section>
