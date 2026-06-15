@@ -22,7 +22,7 @@ import {
   type DetectResult,
 } from "@/lib/sample";
 import { minifyHTML, minifyCSS, minifyJS } from "@/lib/minify";
-import { validateHTML, validateCSS, validateJS, type ValidationIssue } from "@/lib/validate";
+import { validateHTML, validateCSS, validateJS, qualityScore, suggestionFor, type ValidationIssue } from "@/lib/validate";
 import { listRecent, saveRecent, deleteRecent, type RecentProject } from "@/lib/recent";
 
 export const Route = createFileRoute("/app")({
