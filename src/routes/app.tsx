@@ -817,9 +817,12 @@ function ValidationList({ label, items }: { label: string; items: ValidationIssu
 }
 
 function DetectChips({ d }: { d: DetectResult }) {
+  const fwLabel = d.framework === "react" ? "React"
+    : d.framework === "vue" ? "Vue"
+    : d.framework === "typescript" ? "TS" : null;
   const items: Array<[string, boolean]> = [["HTML", d.html], ["CSS", d.css], ["JS", d.js]];
   return (
-    <div style={{ display: "flex", gap: 4 }}>
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
       {items.map(([k, on]) => (
         <span key={k} style={{
           fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999,
@@ -830,6 +833,41 @@ function DetectChips({ d }: { d: DetectResult }) {
           {on ? "✓" : "·"} {k}
         </span>
       ))}
+      {fwLabel && (
+        <span style={{
+          fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999,
+          background: "rgba(99,102,241,0.18)", color: "var(--accent)",
+          border: "1px solid rgba(99,102,241,0.35)",
+        }}>★ {fwLabel}</span>
+      )}
+    </div>
+  );
+}
+
+function ValidationDetail({ label, items, hasCode }: { label: string; items: ValidationIssue[]; hasCode: boolean }) {
+  if (!hasCode) return null;
+  if (items.length === 0) {
+    return (
+      <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, padding: "6px 0" }}>
+        ✓ {label} Valid
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>
+        {label} — {items.length} issue{items.length === 1 ? "" : "s"}
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, display: "grid", gap: 4 }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ color: it.level === "error" ? "var(--danger)" : "var(--warning)" }}>
+            <div><strong>{it.level === "error" ? "Error" : "Warning"}{it.line ? ` · Line ${it.line}` : ""}:</strong> {it.msg}</div>
+            <div style={{ color: "var(--text-faint)", fontSize: 11, marginTop: 2 }}>
+              → {suggestionFor(it)}
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
